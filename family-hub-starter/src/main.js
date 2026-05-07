@@ -1,4 +1,5 @@
 import './styles.css';
+import { stateRef, get, set } from './firebase.js';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -662,20 +663,18 @@ function renderProfiles() {
 
 // ── persistence ───────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'family-hub-v1';
-
 function saveState() {
-  try {
-    const s = { ...state, currentDate: state.currentDate.toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch {}
+  const s = { ...state, currentDate: state.currentDate.toISOString() };
+  delete s.editingMealIdx;
+  delete s.selectedRecipeId;
+  set(stateRef, s).catch(() => {});
 }
 
-function loadState() {
+async function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
+    const snapshot = await get(stateRef);
+    if (!snapshot.exists()) return;
+    const saved = snapshot.val();
     Object.assign(state, saved);
     state.currentDate = saved.currentDate ? new Date(saved.currentDate) : new Date();
     state.editingMealIdx = null;
@@ -1168,5 +1167,4 @@ function bind() {
 
 // ── boot ──────────────────────────────────────────────────────────────────────
 
-loadState();
-render();
+loadState().then(() => render());
