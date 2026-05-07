@@ -354,6 +354,7 @@ h1, h2, h3, h4 { line-height: 1.1; }
   border-radius: 18px;
   padding: 16px 20px;
   box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  transition: background 0.15s, outline 0.1s;
 }
 .simple-day {
   width: 46px;
@@ -366,7 +367,65 @@ h1, h2, h3, h4 { line-height: 1.1; }
   font-size: 0.82rem;
   flex-shrink: 0;
 }
-.simple-meal { font-weight: 700; font-size: 1rem; }
+.simple-meal { font-weight: 700; font-size: 1rem; flex: 1; }
+.meal-empty  { color: var(--muted); font-weight: 500; font-style: italic; font-size: 0.87rem; }
+.meals-hint  { font-size: 0.78rem; color: var(--muted); margin: -4px 0 10px; }
+.assign-hint {
+  font-size: 0.82rem; color: var(--lavender-acc); font-weight: 700;
+  background: #ebe8ff; border-radius: 12px; padding: 8px 14px;
+  margin-bottom: 10px;
+}
+
+/* Drop zone states */
+.meal-drop-zone.droppable { outline: 2px dashed var(--lavender-acc); outline-offset: -3px; cursor: pointer; }
+.meal-drop-zone.drag-over { background: #ebe8ff !important; outline: 2px solid var(--lavender-acc); outline-offset: -3px; }
+
+/* ── Recipe grid ─────────────────────────────────────────────────────────────── */
+.recipe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.recipe-card {
+  position: relative;
+  background: var(--white);
+  border-radius: 18px;
+  padding: 16px 14px 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  cursor: grab;
+  user-select: none;
+  border: 2px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.recipe-card.selected {
+  border-color: var(--lavender-acc);
+  box-shadow: 0 2px 14px rgba(124,108,216,0.28);
+}
+.recipe-card.dragging { opacity: 0.45; cursor: grabbing; }
+.recipe-emoji { font-size: 2rem; margin-bottom: 6px; line-height: 1; }
+.recipe-name  { font-weight: 800; font-size: 0.95rem; margin-bottom: 3px; }
+.recipe-ing-count { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+.recipe-ing-preview {
+  font-size: 0.72rem; color: var(--muted); margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.recipe-del-btn { position: absolute; top: 8px; right: 8px; }
+.recipe-add-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; background: var(--bg); border: 2px dashed var(--border);
+  border-radius: 18px; padding: 16px; color: var(--muted);
+  font-weight: 700; font-size: 0.87rem; min-height: 110px;
+  transition: border-color 0.15s;
+}
+.recipe-add-card:hover { border-color: var(--lavender-acc); color: var(--lavender-acc); }
+.recipe-add-icon { font-size: 1.8rem; line-height: 1; }
+.recipe-textarea {
+  width: 100%; border: 2px solid var(--border); border-radius: 14px;
+  padding: 12px 14px; font: inherit; outline: none; resize: vertical;
+  background: var(--bg); color: var(--ink);
+}
+.recipe-textarea:focus { border-color: var(--lavender-acc); }
 
 .grocery-grid {
   display: grid;

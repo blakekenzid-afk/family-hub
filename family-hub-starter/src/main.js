@@ -62,7 +62,14 @@ const state = {
   nextTaskId: 10,
   nextListId: 4,
   nextNotifId: 4,
+  nextRecipeId: 4,
   editingMealIdx: null,
+  selectedRecipeId: null,
+  recipes: [
+    { id: 1, name: 'Chicken Bowls',  emoji: '🍗', ingredients: ['Chicken breast', 'Rice', 'Broccoli', 'Soy sauce', 'Garlic'] },
+    { id: 2, name: 'Spaghetti',      emoji: '🍝', ingredients: ['Pasta', 'Ground beef', 'Tomato sauce', 'Garlic', 'Onion'] },
+    { id: 3, name: 'Street Tacos',   emoji: '🌮', ingredients: ['Tortillas', 'Ground beef', 'Lettuce', 'Salsa', 'Cheese', 'Lime'] },
+  ],
   profiles: [
     { name: 'Mom',  emoji: '👩', color: 'lavender' },
     { name: 'Dad',  emoji: '👨', color: 'blue' },
@@ -237,29 +244,65 @@ function renderTasks() {
 }
 
 function renderMeals() {
+  const hasSelected = state.selectedRecipeId !== null;
+  const selRecipe = state.recipes.find(r => r.id === state.selectedRecipeId);
   return `
     <div class="page">
       <header class="tasks-header">
         <button class="back-btn" type="button" data-nav="home">←</button>
-        <h1 class="tasks-date">Meals This Week</h1>
+        <h1 class="tasks-date">Meals & Recipes</h1>
         <div class="tasks-nav"></div>
       </header>
-      <div class="simple-list">
+
+      <h3 class="section-label">This Week</h3>
+      ${hasSelected ? `<div class="assign-hint">Tap a day to assign <strong>${selRecipe ? selRecipe.emoji + ' ' + selRecipe.name : ''}</strong></div>` : '<p class="meals-hint">Drag a recipe onto a day — or tap a recipe, then tap a day</p>'}
+      <div class="simple-list meal-week">
         ${state.meals.map((m, i) => state.editingMealIdx === i
-          ? `<div class="simple-row">
+          ? `<div class="simple-row meal-drop-zone" data-drop-day="${i}">
                <span class="simple-day">${m.day}</span>
                <form class="meal-edit-form" data-meal-idx="${i}">
                  <input class="meal-edit-input" name="meal" value="${m.meal}" required autofocus>
                  <button class="icon-btn" type="submit">✓</button>
                </form>
              </div>`
-          : `<div class="simple-row">
+          : `<div class="simple-row meal-drop-zone${hasSelected ? ' droppable' : ''}" data-drop-day="${i}">
                <span class="simple-day">${m.day}</span>
-               <span class="simple-meal">${m.meal}</span>
+               <span class="simple-meal">${m.meal || '<span class="meal-empty">drag a recipe here</span>'}</span>
                <button class="edit-icon-btn" data-edit-meal="${i}" type="button">✏️</button>
              </div>`
         ).join('')}
       </div>
+
+      <h3 class="section-label" style="margin-top:26px">Recipes</h3>
+      <div class="recipe-grid">
+        ${state.recipes.map(r => `
+          <div class="recipe-card${state.selectedRecipeId === r.id ? ' selected' : ''}"
+               draggable="true" data-recipe-id="${r.id}" data-select-recipe="${r.id}">
+            <button class="del-sm recipe-del-btn" data-del-recipe="${r.id}" type="button" aria-label="Delete">×</button>
+            <div class="recipe-emoji">${r.emoji}</div>
+            <div class="recipe-name">${r.name}</div>
+            <div class="recipe-ing-count">${r.ingredients.length} ingredient${r.ingredients.length !== 1 ? 's' : ''}</div>
+            ${r.ingredients.length ? `<div class="recipe-ing-preview">${r.ingredients.slice(0,3).join(', ')}${r.ingredients.length > 3 ? '…' : ''}</div>` : ''}
+          </div>`).join('')}
+        <button class="recipe-add-card" id="add-recipe-btn" type="button">
+          <span class="recipe-add-icon">+</span>
+          <span>New Recipe</span>
+        </button>
+      </div>
+
+      <dialog class="event-dialog" id="recipe-dialog">
+        <form class="dialog-card" id="recipe-form">
+          <button class="close-btn" type="button" id="recipe-close">×</button>
+          <p class="eyebrow">New Recipe</p>
+          <label>Name        <input required name="name" placeholder="Chicken Tacos"></label>
+          <label>Emoji       <input name="emoji" maxlength="2" placeholder="🍽️" value="🍽️"></label>
+          <label>Ingredients
+            <textarea name="ingredients" class="recipe-textarea"
+              placeholder="One per line:&#10;Chicken breast&#10;Tortillas&#10;Salsa" rows="5"></textarea>
+          </label>
+          <button class="primary-btn full" type="submit">Save Recipe</button>
+        </form>
+      </dialog>
     </div>`;
 }
 
@@ -616,6 +659,27 @@ function renderProfiles() {
     </div>`;
 }
 
+// ── assign recipe helper ──────────────────────────────────────────────────────
+
+function assignRecipeToDay(recipeId, dayIdx) {
+  const recipe = state.recipes.find(r => r.id === recipeId);
+  if (!recipe || dayIdx < 0 || dayIdx >= state.meals.length) return;
+  state.meals[dayIdx].meal = recipe.name;
+  if (recipe.ingredients.length > 0) {
+    const catName = `${recipe.emoji} ${recipe.name}`;
+    let cat = state.groceries.find(c => c.category === catName);
+    if (!cat) {
+      cat = { category: catName, items: [] };
+      state.groceries.push(cat);
+    }
+    recipe.ingredients.forEach(ing => {
+      if (!cat.items.includes(ing)) cat.items.push(ing);
+    });
+  }
+  state.selectedRecipeId = null;
+  render();
+}
+
 // ── render + bind ─────────────────────────────────────────────────────────────
 
 function render() {
@@ -703,6 +767,73 @@ function bind() {
       state.editingMealIdx = null;
       render();
     }));
+
+  // ── Recipes ────────────────────────────────────────────────────────────
+  // Drag-and-drop on recipe cards
+  document.querySelectorAll('[data-recipe-id]').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('recipeId', card.dataset.recipeId);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+  });
+
+  // Drop zones on day rows
+  document.querySelectorAll('.meal-drop-zone').forEach(zone => {
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const recipeId = Number(e.dataTransfer.getData('recipeId'));
+      assignRecipeToDay(recipeId, Number(zone.dataset.dropDay));
+    });
+    // Tap-to-assign (mobile): tap a day while a recipe is selected
+    zone.addEventListener('click', e => {
+      if (e.target.closest('[data-edit-meal]')) return;
+      if (state.selectedRecipeId !== null) {
+        assignRecipeToDay(state.selectedRecipeId, Number(zone.dataset.dropDay));
+      }
+    });
+  });
+
+  // Tap a recipe card to select / deselect it
+  document.querySelectorAll('[data-select-recipe]').forEach(card =>
+    card.addEventListener('click', e => {
+      if (e.target.closest('[data-del-recipe]')) return;
+      const id = Number(card.dataset.selectRecipe);
+      state.selectedRecipeId = state.selectedRecipeId === id ? null : id;
+      render();
+    }));
+
+  // Delete recipe
+  document.querySelectorAll('[data-del-recipe]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = Number(btn.dataset.delRecipe);
+      state.recipes = state.recipes.filter(r => r.id !== id);
+      if (state.selectedRecipeId === id) state.selectedRecipeId = null;
+      render();
+    }));
+
+  // Add recipe dialog
+  const recipeDialog = document.querySelector('#recipe-dialog');
+  document.querySelector('#add-recipe-btn')?.addEventListener('click', () => recipeDialog.showModal());
+  document.querySelector('#recipe-close')?.addEventListener('click', () => { recipeDialog.close(); });
+  document.querySelector('#recipe-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const ingredients = (data.get('ingredients') || '').split('\n').map(s => s.trim()).filter(Boolean);
+    state.recipes.push({
+      id: state.nextRecipeId++,
+      name: data.get('name'),
+      emoji: data.get('emoji') || '🍽️',
+      ingredients,
+    });
+    recipeDialog.close();
+    e.currentTarget.reset();
+    render();
+  });
 
   // ── Groceries (categorised) ─────────────────────────────────────────────────────
   document.querySelectorAll('[data-del-grocery-item]').forEach(btn =>
