@@ -263,6 +263,16 @@ function renderMeals() {
     </div>`;
 }
 
+const GROCERY_PALETTE = [
+  { bg: '#d5f0dd', text: '#22703d' },  // green
+  { bg: '#d5e8ff', text: '#1554a0' },  // blue
+  { bg: '#fff0c0', text: '#8a6300' },  // yellow
+  { bg: '#ffdde8', text: '#a82d60' },  // pink
+  { bg: '#ead5ff', text: '#592fa0' },  // purple
+  { bg: '#ffe0cc', text: '#a04010' },  // orange
+  { bg: '#d5f5f5', text: '#1a7070' },  // teal
+];
+
 function renderGroceries() {
   return `
     <div class="page">
@@ -271,9 +281,11 @@ function renderGroceries() {
         <h1 class="tasks-date">Grocery List</h1>
         <div class="tasks-nav"></div>
       </header>
-      ${state.groceries.map((cat, ci) => `
+      ${state.groceries.map((cat, ci) => {
+        const pal = GROCERY_PALETTE[ci % GROCERY_PALETTE.length];
+        return `
         <div class="grocery-cat-block">
-          <h3 class="section-label">${cat.category}</h3>
+          <div class="grocery-cat-header" style="background:${pal.bg};color:${pal.text}">${cat.category}</div>
           <div class="item-list">
             ${cat.items.map((item, ii) => `
               <div class="item-row">
@@ -285,7 +297,8 @@ function renderGroceries() {
             <input name="item" placeholder="Add to ${cat.category}..." required>
             <button type="submit" class="add-item-submit">Add</button>
           </form>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
       <form class="add-item-form" id="add-grocery-cat-form" style="margin-top:8px">
         <input name="cat" placeholder="New category name..." required>
         <button type="submit" class="add-item-submit">+ Category</button>

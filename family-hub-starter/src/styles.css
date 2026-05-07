@@ -383,6 +383,17 @@ h1, h2, h3, h4 { line-height: 1.1; }
   box-shadow: 0 1px 6px rgba(0,0,0,0.06);
 }
 .grocery-cat-block { margin-bottom: 20px; }
+.grocery-cat-header {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 16px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
 .profile-card { position: relative; }
 .profile-del {
   position: absolute;
