@@ -61,12 +61,18 @@ const state = {
   ],
   nextTaskId: 10,
   nextListId: 4,
+  nextNotifId: 4,
   editingMealIdx: null,
   profiles: [
     { name: 'Mom',  emoji: '👩', color: 'lavender' },
     { name: 'Dad',  emoji: '👨', color: 'blue' },
     { name: 'Ava',  emoji: '👧', color: 'pink' },
     { name: 'Leo',  emoji: '👦', color: 'green' },
+  ],
+  notifications: [
+    { id: 1, title: 'Piano lesson', body: 'Ava has piano at 4:00 PM', read: false, time: new Date(Date.now() - 1000*60*30).toISOString() },
+    { id: 2, title: 'Library books due', body: 'Return books today!', read: false, time: new Date(Date.now() - 1000*60*90).toISOString() },
+    { id: 3, title: 'Soccer practice', body: 'Leo — 5:30 PM today', read: true,  time: new Date(Date.now() - 1000*60*180).toISOString() },
   ],
   budget: {
     monthly: 3500,
@@ -99,10 +105,14 @@ function fmtLong(date) {
 
 function renderHome() {
   const todayEvents = state.events.filter(e => e.date === todayStr());
+  const unread = state.notifications.filter(n => !n.read).length;
   return `
     <div class="page home-page">
       <header class="app-header">
-        <span class="header-spacer"></span>
+        <button class="bell-btn" type="button" data-nav="notifications" aria-label="Notifications">
+          🔔
+          ${unread > 0 ? `<span class="notif-badge">${unread}</span>` : ''}
+        </button>
         <button class="family-name-btn" type="button">diskey <span class="chevron">⌄</span></button>
         <button class="account-btn" type="button" aria-label="Account">👤</button>
       </header>
@@ -485,6 +495,71 @@ function renderBudget() {
     </div>`;
 }
 
+function renderNotifications() {
+  function timeAgo(iso) {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+    if (diff < 60)   return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+    return `${Math.floor(diff/86400)}d ago`;
+  }
+  const unread = state.notifications.filter(n => !n.read);
+  const read   = state.notifications.filter(n =>  n.read);
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Notifications</h1>
+        <div class="tasks-nav">
+          ${unread.length ? `<button class="icon-btn" id="mark-all-read">Mark all read</button>` : ''}
+        </div>
+      </header>
+      ${unread.length === 0 && read.length === 0 ? `
+        <div class="notif-empty">🔔 No notifications yet</div>` : ''}
+      ${unread.length ? `
+        <h3 class="section-label">New</h3>
+        <div class="notif-list">
+          ${unread.map(n => `
+            <div class="notif-card unread">
+              <div class="notif-dot"></div>
+              <div class="notif-body">
+                <p class="notif-title">${n.title}</p>
+                <p class="notif-sub">${n.body}</p>
+                <p class="notif-time">${timeAgo(n.time)}</p>
+              </div>
+              <div class="notif-actions">
+                <button class="icon-btn" data-read-notif="${n.id}" type="button">✓</button>
+                <button class="del-sm" data-del-notif="${n.id}" type="button">×</button>
+              </div>
+            </div>`).join('')}
+        </div>` : ''}
+      ${read.length ? `
+        <h3 class="section-label" style="margin-top:18px">Earlier</h3>
+        <div class="notif-list">
+          ${read.map(n => `
+            <div class="notif-card">
+              <div class="notif-body">
+                <p class="notif-title">${n.title}</p>
+                <p class="notif-sub">${n.body}</p>
+                <p class="notif-time">${timeAgo(n.time)}</p>
+              </div>
+              <button class="del-sm" data-del-notif="${n.id}" type="button">×</button>
+            </div>`).join('')}
+        </div>` : ''}
+      <button class="add-txn-btn" id="add-notif-btn" type="button" style="margin-top:16px">+ Add Reminder</button>
+      <dialog class="event-dialog" id="notif-dialog">
+        <form class="dialog-card" id="notif-form">
+          <button class="close-btn" type="button" id="notif-close">×</button>
+          <p class="eyebrow">New Reminder</p>
+          <label>Title   <input required name="title" placeholder="Soccer practice"></label>
+          <label>Message <input name="body" placeholder="Don\'t forget cleats!"></label>
+          <label>When    <input name="time" type="datetime-local"></label>
+          <button class="primary-btn full" type="submit">Save Reminder</button>
+        </form>
+      </dialog>
+    </div>`;
+}
+
 function renderProfiles() {
   return `
     <div class="page">
@@ -532,8 +607,9 @@ function render() {
     case 'groceries': app.innerHTML = renderGroceries(); break;
     case 'calendar':  app.innerHTML = renderCalendar();  break;
     case 'lists':     app.innerHTML = renderLists();      break;
-    case 'budget':    app.innerHTML = renderBudget();     break;
-    case 'profiles':  app.innerHTML = renderProfiles();   break;
+    case 'budget':    app.innerHTML = renderBudget();        break;
+    case 'notifications': app.innerHTML = renderNotifications(); break;
+    case 'profiles':  app.innerHTML = renderProfiles();     break;
     default:          app.innerHTML = renderHome();
   }
   bind();
@@ -755,6 +831,50 @@ function bind() {
       category: data.get('category'),
     });
     txnDialog.close();
+    render();
+  });  // ── Notifications ─────────────────────────────────────────────────────────
+  document.querySelector('#mark-all-read')?.addEventListener('click', () => {
+    state.notifications.forEach(n => n.read = true); render();
+  });
+  document.querySelectorAll('[data-read-notif]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const n = state.notifications.find(n => n.id === Number(btn.dataset.readNotif));
+      if (n) { n.read = true; render(); }
+    }));
+  document.querySelectorAll('[data-del-notif]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.notifications = state.notifications.filter(n => n.id !== Number(btn.dataset.delNotif));
+      render();
+    }));
+  const notifDialog = document.querySelector('#notif-dialog');
+  document.querySelector('#add-notif-btn')?.addEventListener('click', () => {
+    // set datetime-local default to now+1h
+    const dt = document.querySelector('#notif-dialog [name=time]');
+    if (dt) { const d = new Date(Date.now()+3600000); dt.value = d.toISOString().slice(0,16); }
+    notifDialog.showModal();
+  });
+  document.querySelector('#notif-close')?.addEventListener('click', () => notifDialog.close());
+  document.querySelector('#notif-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const timeVal = data.get('time');
+    const notif = {
+      id:    state.nextNotifId++,
+      title: data.get('title'),
+      body:  data.get('body') || '',
+      read:  false,
+      time:  timeVal ? new Date(timeVal).toISOString() : new Date().toISOString(),
+    };
+    state.notifications.unshift(notif);
+    // fire browser notification if permitted and time is now/past
+    if (timeVal && new Date(timeVal) <= new Date()) {
+      if (Notification.permission === 'granted') {
+        new Notification(notif.title, { body: notif.body });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(p => { if (p === 'granted') new Notification(notif.title, { body: notif.body }); });
+      }
+    }
+    notifDialog.close();
     render();
   });
   // ── Profiles ─────────────────────────────────────────────────────────────

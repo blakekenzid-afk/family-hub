@@ -654,6 +654,49 @@ h1, h2, h3, h4 { line-height: 1.1; }
 }
 .profile-name { font-size: 1.1rem; font-weight: 800; }
 
+/* ── Bell / Notifications ────────────────────────────────────────────────────── */
+.bell-btn {
+  position: relative;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--border);
+  display: grid; place-items: center;
+  font-size: 1.15rem;
+}
+.notif-badge {
+  position: absolute; top: 2px; right: 2px;
+  min-width: 18px; height: 18px; border-radius: 999px;
+  background: #e05c5c; color: #fff;
+  font-size: 0.65rem; font-weight: 900;
+  display: grid; place-items: center;
+  padding: 0 4px;
+  pointer-events: none;
+}
+.section-label {
+  font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted);
+  margin: 16px 0 8px;
+}
+.notif-list { display: grid; gap: 10px; }
+.notif-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--white); border-radius: 18px; padding: 14px 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+}
+.notif-card.unread { border-left: 4px solid var(--lavender-acc); }
+.notif-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--lavender-acc); flex-shrink: 0; margin-top: 5px;
+}
+.notif-body { flex: 1; }
+.notif-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 2px; }
+.notif-sub   { font-size: 0.87rem; color: var(--muted); margin-bottom: 4px; }
+.notif-time  { font-size: 0.77rem; color: var(--muted); }
+.notif-actions { display: flex; align-items: center; gap: 6px; }
+.notif-empty {
+  text-align: center; color: var(--muted);
+  padding: 48px 0; font-size: 1rem;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .persons-grid { grid-template-columns: 1fr; }
