@@ -596,9 +596,11 @@ function bind() {
       state.events.splice(Number(btn.dataset.delEvent), 1);
       render();
     }));
-}
-  document.querySelector('#add-txn-btn')?.addEventListener('click', () => txnDialog.showModal());
-  document.querySelector('#txn-close')?.addEventListener('click', () => txnDialog.close());
+
+  // ── Budget ──────────────────────────────────────────────────────────────
+  const txnDialog = document.querySelector('#txn-dialog');
+  document.querySelector('#add-txn-btn')?.addEventListener('click', () => txnDialog?.showModal());
+  document.querySelector('#txn-close')?.addEventListener('click', () => txnDialog?.close());
   document.querySelector('#txn-form')?.addEventListener('submit', e => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
