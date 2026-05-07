@@ -382,6 +382,12 @@ h1, h2, h3, h4 { line-height: 1.1; }
   font-size: 0.9rem;
   box-shadow: 0 1px 6px rgba(0,0,0,0.06);
 }
+.grocery-cat-block { margin-bottom: 20px; }
+.profile-card { position: relative; }
+.profile-del {
+  position: absolute;
+  top: 10px; right: 10px;
+}
 /* ── Budget ───────────────────────────────────────────────────────────────────── */
 .budget-summary {
   background: linear-gradient(135deg, #1a1a2e, #2e2e50);

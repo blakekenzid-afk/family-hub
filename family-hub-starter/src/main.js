@@ -49,7 +49,11 @@ const state = {
     { day: 'Thu', meal: 'Slow cooker soup' },
     { day: 'Fri', meal: 'Pizza + movie night' },
   ],
-  groceries: ['Milk', 'Strawberries', 'Bread', 'Granola bars', 'Apples', 'Yogurt'],
+  groceries: [
+    { category: 'Produce',    items: ['Strawberries', 'Apples'] },
+    { category: 'Dairy',      items: ['Milk', 'Yogurt'] },
+    { category: 'Pantry',     items: ['Bread', 'Granola bars'] },
+  ],
   lists: [
     { id: 1, name: 'School supplies', items: ['Pencils', 'Notebook', 'Backpack'] },
     { id: 2, name: 'Birthday wish list', items: ['Legos', 'Art supplies'] },
@@ -58,6 +62,12 @@ const state = {
   nextTaskId: 10,
   nextListId: 4,
   editingMealIdx: null,
+  profiles: [
+    { name: 'Mom',  emoji: '👩', color: 'lavender' },
+    { name: 'Dad',  emoji: '👨', color: 'blue' },
+    { name: 'Ava',  emoji: '👧', color: 'pink' },
+    { name: 'Leo',  emoji: '👦', color: 'green' },
+  ],
   budget: {
     monthly: 3500,
     categories: [
@@ -251,16 +261,24 @@ function renderGroceries() {
         <h1 class="tasks-date">Grocery List</h1>
         <div class="tasks-nav"></div>
       </header>
-      <div class="item-list">
-        ${state.groceries.map((item, i) => `
-          <div class="item-row">
-            <span>🛒 ${item}</span>
-            <button class="del-sm" data-del-grocery="${i}" type="button" aria-label="Remove">×</button>
-          </div>`).join('')}
-      </div>
-      <form class="add-item-form" id="add-grocery-form">
-        <input name="item" placeholder="Add grocery item..." required>
-        <button type="submit" class="add-item-submit">Add</button>
+      ${state.groceries.map((cat, ci) => `
+        <div class="grocery-cat-block">
+          <h3 class="section-label">${cat.category}</h3>
+          <div class="item-list">
+            ${cat.items.map((item, ii) => `
+              <div class="item-row">
+                <span>🛒 ${item}</span>
+                <button class="del-sm" data-del-grocery-item data-ci="${ci}" data-ii="${ii}" type="button" aria-label="Remove">×</button>
+              </div>`).join('')}
+          </div>
+          <form class="add-item-form" data-add-grocery="${ci}">
+            <input name="item" placeholder="Add to ${cat.category}..." required>
+            <button type="submit" class="add-item-submit">Add</button>
+          </form>
+        </div>`).join('')}
+      <form class="add-item-form" id="add-grocery-cat-form" style="margin-top:8px">
+        <input name="cat" placeholder="New category name..." required>
+        <button type="submit" class="add-item-submit">+ Category</button>
       </form>
     </div>`;
 }
@@ -406,14 +424,19 @@ function renderBudget() {
 
       <h3 class="section-label">Recent Transactions</h3>
       <div class="txn-list">
-        ${transactions.slice().reverse().map(t => `
+        ${transactions.slice().reverse().map((t, ri) => {
+          const realIdx = transactions.length - 1 - ri;
+          return `
           <div class="txn-row">
             <div class="txn-left">
               <span class="txn-desc">${t.desc}</span>
               <span class="txn-cat">${t.category}</span>
             </div>
-            <span class="txn-amt">-$${t.amount.toFixed(2)}</span>
-          </div>`).join('')}
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="txn-amt">-$${t.amount.toFixed(2)}</span>
+              <button class="del-sm" data-del-txn="${realIdx}" type="button" aria-label="Delete">×</button>
+            </div>
+          </div>`;}).join('')}
       </div>
 
       <button class="add-txn-btn" id="add-txn-btn" type="button">+ Add Transaction</button>
@@ -444,12 +467,31 @@ function renderProfiles() {
         <div class="tasks-nav"></div>
       </header>
       <div class="profiles-grid">
-        ${FAMILY.map(p => `
+        ${state.profiles.map((p, i) => `
           <div class="profile-card ${p.color}">
+            <button class="del-sm profile-del" data-del-profile="${i}" type="button" aria-label="Remove">×</button>
             <div class="profile-avatar">${p.emoji}</div>
             <span class="profile-name">${p.name}</span>
           </div>`).join('')}
       </div>
+      <button class="add-list-btn" id="add-profile-btn" type="button" style="margin-top:16px">+ Add Person</button>
+      <dialog class="event-dialog" id="profile-dialog">
+        <form class="dialog-card" id="profile-form">
+          <button class="close-btn" type="button" id="profile-close">×</button>
+          <p class="eyebrow">New Profile</p>
+          <label>Name <input required name="name" placeholder="Sam"></label>
+          <label>Emoji <input name="emoji" placeholder="🧑" maxlength="2" value="🧑"></label>
+          <label>Color
+            <select name="color">
+              <option value="lavender">Lavender</option>
+              <option value="blue">Blue</option>
+              <option value="pink">Pink</option>
+              <option value="green">Green</option>
+            </select>
+          </label>
+          <button class="primary-btn full" type="submit">Add Person</button>
+        </form>
+      </dialog>
     </div>`;
 }
 
@@ -539,16 +581,24 @@ function bind() {
       render();
     }));
 
-  // ── Groceries ────────────────────────────────────────────────────────────
-  document.querySelectorAll('[data-del-grocery]').forEach(btn =>
+  // ── Groceries (categorised) ─────────────────────────────────────────────────────
+  document.querySelectorAll('[data-del-grocery-item]').forEach(btn =>
     btn.addEventListener('click', () => {
-      state.groceries.splice(Number(btn.dataset.delGrocery), 1);
+      const ci = Number(btn.dataset.ci), ii = Number(btn.dataset.ii);
+      state.groceries[ci].items.splice(ii, 1);
       render();
     }));
-  document.querySelector('#add-grocery-form')?.addEventListener('submit', e => {
+  document.querySelectorAll('[data-add-grocery]').forEach(form =>
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const ci = Number(form.dataset.addGrocery);
+      const item = new FormData(e.currentTarget).get('item').trim();
+      if (item) { state.groceries[ci].items.push(item); render(); }
+    }));
+  document.querySelector('#add-grocery-cat-form')?.addEventListener('submit', e => {
     e.preventDefault();
-    const item = new FormData(e.currentTarget).get('item').trim();
-    if (item) { state.groceries.push(item); render(); }
+    const name = new FormData(e.currentTarget).get('cat').trim();
+    if (name) { state.groceries.push({ category: name, items: [] }); render(); }
   });
 
   // ── Lists ─────────────────────────────────────────────────────────────────
@@ -598,6 +648,15 @@ function bind() {
     }));
 
   // ── Budget ──────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-del-txn]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const idx = Number(btn.dataset.delTxn);
+      const txn = state.budget.transactions[idx];
+      const cat = state.budget.categories.find(c => c.name === txn.category);
+      if (cat) cat.spent = Math.max(0, Math.round((cat.spent - txn.amount) * 100) / 100);
+      state.budget.transactions.splice(idx, 1);
+      render();
+    }));
   const txnDialog = document.querySelector('#txn-dialog');
   document.querySelector('#add-txn-btn')?.addEventListener('click', () => txnDialog?.showModal());
   document.querySelector('#txn-close')?.addEventListener('click', () => txnDialog?.close());
@@ -614,6 +673,22 @@ function bind() {
       category: data.get('category'),
     });
     txnDialog.close();
+    render();
+  });
+  // ── Profiles ─────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-del-profile]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.profiles.splice(Number(btn.dataset.delProfile), 1);
+      render();
+    }));
+  const profileDialog = document.querySelector('#profile-dialog');
+  document.querySelector('#add-profile-btn')?.addEventListener('click', () => profileDialog.showModal());
+  document.querySelector('#profile-close')?.addEventListener('click', () => profileDialog.close());
+  document.querySelector('#profile-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    state.profiles.push({ name: data.get('name'), emoji: data.get('emoji') || '🧑', color: data.get('color') });
+    profileDialog.close();
     render();
   });
 }
