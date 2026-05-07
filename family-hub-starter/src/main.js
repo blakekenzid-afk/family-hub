@@ -741,7 +741,7 @@ function assignRecipeToDay(recipeId, dayIdx) {
       state.groceries.push(cat);
     }
     recipe.ingredients.forEach(ing => {
-      if (!cat.items.includes(ing)) cat.items.push(ing);
+      if (!cat.items.some(i => i.text === ing)) cat.items.push({ text: ing, checked: false });
     });
   }
   state.selectedRecipeId = null;
