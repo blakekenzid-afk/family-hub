@@ -200,6 +200,81 @@ function renderGroceries() {
     </div>`;
 }
 
+function renderCalendar() {
+  const year  = state.currentDate.getFullYear();
+  const month = state.currentDate.getMonth();
+  const first = new Date(year, month, 1);
+  const start = new Date(first);
+  start.setDate(first.getDate() - first.getDay());
+  const days  = Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(start); d.setDate(start.getDate() + i); return d;
+  });
+  const todayISO = todayStr();
+  const monthLabel = state.currentDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">${monthLabel}</h1>
+        <div class="tasks-nav">
+          <button class="icon-btn" id="cal-prev">‹</button>
+          <button class="icon-btn" id="cal-next">›</button>
+        </div>
+      </header>
+      <div class="cal-grid-wrap">
+        <div class="cal-weekdays">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<span>${d}</span>`).join('')}</div>
+        <div class="cal-grid">
+          ${days.map(day => {
+            const iso = day.toISOString().slice(0,10);
+            const inMonth = day.getMonth() === month;
+            const isToday = iso === todayISO;
+            const evts = state.events.filter(e => e.date === iso);
+            return `
+              <div class="cal-cell${inMonth ? '' : ' out'}${isToday ? ' today' : ''}">
+                <span class="cal-num">${day.getDate()}</span>
+                ${evts.map(e => `<div class="cal-evt">${e.title}</div>`).join('')}
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderLists() {
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Lists</h1>
+        <div class="tasks-nav"></div>
+      </header>
+      <div class="lists-placeholder">
+        <div class="placeholder-card">📋 School supplies</div>
+        <div class="placeholder-card">🎁 Birthday wish list</div>
+        <div class="placeholder-card">🏕️ Camping packing list</div>
+      </div>
+    </div>`;
+}
+
+function renderProfiles() {
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Profiles</h1>
+        <div class="tasks-nav"></div>
+      </header>
+      <div class="profiles-grid">
+        ${FAMILY.map(p => `
+          <div class="profile-card ${p.color}">
+            <div class="profile-avatar">${p.emoji}</div>
+            <span class="profile-name">${p.name}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
 // ── render + bind ─────────────────────────────────────────────────────────────
 
 function render() {
@@ -208,6 +283,9 @@ function render() {
     case 'tasks':     app.innerHTML = renderTasks();     break;
     case 'meals':     app.innerHTML = renderMeals();     break;
     case 'groceries': app.innerHTML = renderGroceries(); break;
+    case 'calendar':  app.innerHTML = renderCalendar();  break;
+    case 'lists':     app.innerHTML = renderLists();      break;
+    case 'profiles':  app.innerHTML = renderProfiles();   break;
     default:          app.innerHTML = renderHome();
   }
   bind();
@@ -232,6 +310,14 @@ function bind() {
   });
   document.querySelector('#today-btn')?.addEventListener('click', () => {
     state.currentDate = new Date(); render();
+  });
+  document.querySelector('#cal-prev')?.addEventListener('click', () => {
+    state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() - 1, 1);
+    render();
+  });
+  document.querySelector('#cal-next')?.addEventListener('click', () => {
+    state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() + 1, 1);
+    render();
   });
 }
 

@@ -381,10 +381,92 @@ h1, h2, h3, h4 { line-height: 1.1; }
   box-shadow: 0 1px 6px rgba(0,0,0,0.06);
 }
 
+/* ── Calendar ────────────────────────────────────────────────────────────────── */
+.cal-grid-wrap { background: var(--white); border-radius: 22px; padding: 18px; box-shadow: 0 2px 14px rgba(0,0,0,0.06); }
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-cell {
+  min-height: 64px;
+  border-radius: 12px;
+  padding: 7px 6px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--bg);
+}
+.cal-cell.out { opacity: 0.32; }
+.cal-cell.today { outline: 2px solid var(--blue-acc); background: var(--blue-bg); }
+.cal-num { font-size: 0.82rem; font-weight: 800; }
+.cal-evt {
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: var(--lavender-bg);
+  color: var(--lavender-acc);
+  border-radius: 6px;
+  padding: 2px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Lists ───────────────────────────────────────────────────────────────────── */
+.lists-placeholder { display: grid; gap: 12px; }
+.placeholder-card {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+
+/* ── Profiles ────────────────────────────────────────────────────────────────── */
+.profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.profile-card {
+  border-radius: 22px;
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.profile-card.lavender { background: var(--lavender-bg); }
+.profile-card.blue     { background: var(--blue-bg);     }
+.profile-card.pink     { background: var(--pink-bg);     }
+.profile-card.green    { background: var(--green-bg);    }
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  display: grid;
+  place-items: center;
+  font-size: 2.4rem;
+}
+.profile-name { font-size: 1.1rem; font-weight: 800; }
+
 /* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .persons-grid { grid-template-columns: 1fr; }
   .nav-grid { gap: 16px 8px; }
   .nav-circle { width: 64px; height: 64px; font-size: 1.6rem; }
+  .profiles-grid { grid-template-columns: 1fr; }
+  .cal-cell { min-height: 44px; padding: 4px 3px; }
 }
 
