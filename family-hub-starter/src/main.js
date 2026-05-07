@@ -209,7 +209,7 @@ function renderTasks() {
         </div>
       </header>
       <div class="persons-grid">
-        ${FAMILY.map(renderPersonCard).join('')}
+        ${state.profiles.map(renderPersonCard).join('')}
       </div>
       <button class="fab" id="open-task-dialog" type="button" aria-label="Add task">+</button>
       <dialog class="event-dialog" id="task-dialog">
@@ -218,7 +218,7 @@ function renderTasks() {
           <p class="eyebrow">New Task</p>
           <label>Person
             <select name="person">
-              ${FAMILY.map(p => `<option>${p.name}</option>`).join('')}
+              ${state.profiles.map(p => `<option>${p.name}</option>`).join('')}
             </select>
           </label>
           <label>Time of Day
@@ -403,7 +403,7 @@ function renderBudget() {
   const { monthly, categories, transactions } = state.budget;
   const totalSpent = categories.reduce((s, c) => s + c.spent, 0);
   const totalBudgeted = categories.reduce((s, c) => s + c.budgeted, 0);
-  const overallPct = Math.min(100, Math.round((totalSpent / totalBudgeted) * 100));
+  const overallPct = totalBudgeted > 0 ? Math.min(100, Math.round((totalSpent / totalBudgeted) * 100)) : 0;
 
   return `
     <div class="page">
@@ -427,7 +427,7 @@ function renderBudget() {
       <h3 class="section-label">Categories</h3>
       <div class="budget-cats">
         ${categories.map((cat, ci) => {
-          const pct = Math.min(100, Math.round((cat.spent / cat.budgeted) * 100));
+          const pct = cat.budgeted > 0 ? Math.min(100, Math.round((cat.spent / cat.budgeted) * 100)) : 0;
           const over = cat.spent > cat.budgeted;
           return `
             <div class="budget-cat">
@@ -511,8 +511,14 @@ function renderBudget() {
 function renderNotifications() {
   function timeAgo(iso) {
     const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
-    if (diff < 60)   return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 0) {
+      const abs = Math.abs(diff);
+      if (abs < 3600)  return `Due in ${Math.ceil(abs/60)}m`;
+      if (abs < 86400) return `Due in ${Math.ceil(abs/3600)}h`;
+      return `Due in ${Math.ceil(abs/86400)}d`;
+    }
+    if (diff < 60)    return 'Just now';
+    if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
     return `${Math.floor(diff/86400)}d ago`;
   }
@@ -679,6 +685,7 @@ function bind() {
       done: false,
     });
     taskDialog.close();
+    e.currentTarget.reset();
     render();
   });
 
@@ -736,7 +743,7 @@ function bind() {
   document.querySelector('#new-list-form')?.addEventListener('submit', e => {
     e.preventDefault();
     const name = new FormData(e.currentTarget).get('name').trim();
-    if (name) { state.lists.push({ id: state.nextListId++, name, items: [] }); newListDialog.close(); render(); }
+    if (name) { state.lists.push({ id: state.nextListId++, name, items: [] }); newListDialog.close(); e.currentTarget.reset(); render(); }
   });
 
   // ── Calendar ─────────────────────────────────────────────────────────────
@@ -825,6 +832,7 @@ function bind() {
       spent:    0,
     });
     addCatDialog.close();
+    e.currentTarget.reset();
     render();
   });
 
@@ -843,7 +851,8 @@ function bind() {
       amount,
       category: data.get('category'),
     });
-    txnDialog.close();
+    txnDialog?.close();
+    e.currentTarget.reset();
     render();
   });  // ── Notifications ─────────────────────────────────────────────────────────
   document.querySelector('#mark-all-read')?.addEventListener('click', () => {
@@ -888,6 +897,7 @@ function bind() {
       }
     }
     notifDialog.close();
+    e.currentTarget.reset();
     render();
   });
   // ── Profiles ─────────────────────────────────────────────────────────────
@@ -904,6 +914,7 @@ function bind() {
     const data = new FormData(e.currentTarget);
     state.profiles.push({ name: data.get('name'), emoji: data.get('emoji') || '🧑', color: data.get('color') });
     profileDialog.close();
+    e.currentTarget.reset();
     render();
   });
 }
