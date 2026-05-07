@@ -403,7 +403,7 @@ function renderBudget() {
 
       <h3 class="section-label">Categories</h3>
       <div class="budget-cats">
-        ${categories.map(cat => {
+        ${categories.map((cat, ci) => {
           const pct = Math.min(100, Math.round((cat.spent / cat.budgeted) * 100));
           const over = cat.spent > cat.budgeted;
           return `
@@ -412,7 +412,9 @@ function renderBudget() {
               <div class="budget-cat-info">
                 <div class="budget-cat-top">
                   <span class="budget-cat-name">${cat.name}</span>
-                  <span class="budget-cat-amt${over ? ' over' : ''}">$${cat.spent} / $${cat.budgeted}</span>
+                  <span class="budget-cat-amt${over ? ' over' : ''}">$${cat.spent.toFixed(2)} / $${cat.budgeted}</span>
+                  <button class="icon-btn" data-edit-cat="${ci}" type="button" style="margin-left:6px;font-size:0.8rem;">✏️</button>
+                  <button class="del-sm" data-del-cat="${ci}" type="button" aria-label="Delete category">×</button>
                 </div>
                 <div class="budget-bar-wrap sm">
                   <div class="budget-bar-fill${over ? ' over' : ''}" style="width:${pct}%"></div>
@@ -421,6 +423,7 @@ function renderBudget() {
             </div>`;
         }).join('')}
       </div>
+      <button class="add-txn-btn" id="add-cat-btn" type="button" style="background:var(--nv-yellow);color:#7a5c00;margin-bottom:10px">+ Add Category</button>
 
       <h3 class="section-label">Recent Transactions</h3>
       <div class="txn-list">
@@ -440,6 +443,30 @@ function renderBudget() {
       </div>
 
       <button class="add-txn-btn" id="add-txn-btn" type="button">+ Add Transaction</button>
+
+      <dialog class="event-dialog" id="edit-cat-dialog">
+        <form class="dialog-card" id="edit-cat-form">
+          <button class="close-btn" type="button" id="edit-cat-close">×</button>
+          <p class="eyebrow">Edit Category</p>
+          <input type="hidden" name="ci">
+          <label>Name    <input required name="name" placeholder="Groceries"></label>
+          <label>Emoji   <input name="icon" maxlength="2" placeholder="🛒"></label>
+          <label>Budget  <input required name="budgeted" type="number" min="0" step="1" placeholder="500"></label>
+          <label>Spent   <input required name="spent" type="number" min="0" step="0.01" placeholder="0"></label>
+          <button class="primary-btn full" type="submit">Save</button>
+        </form>
+      </dialog>
+
+      <dialog class="event-dialog" id="add-cat-dialog">
+        <form class="dialog-card" id="add-cat-form">
+          <button class="close-btn" type="button" id="add-cat-close">×</button>
+          <p class="eyebrow">New Category</p>
+          <label>Name    <input required name="name" placeholder="Entertainment"></label>
+          <label>Emoji   <input name="icon" maxlength="2" placeholder="🎸"></label>
+          <label>Budget  <input required name="budgeted" type="number" min="0" step="1" placeholder="200"></label>
+          <button class="primary-btn full" type="submit">Add Category</button>
+        </form>
+      </dialog>
 
       <dialog class="event-dialog" id="txn-dialog">
         <form class="dialog-card" id="txn-form">
@@ -657,6 +684,61 @@ function bind() {
       state.budget.transactions.splice(idx, 1);
       render();
     }));
+
+  // delete category
+  document.querySelectorAll('[data-del-cat]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.budget.categories.splice(Number(btn.dataset.delCat), 1);
+      render();
+    }));
+
+  // edit category
+  const editCatDialog = document.querySelector('#edit-cat-dialog');
+  document.querySelectorAll('[data-edit-cat]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const ci = Number(btn.dataset.editCat);
+      const cat = state.budget.categories[ci];
+      const f = document.querySelector('#edit-cat-form');
+      f.querySelector('[name=ci]').value = ci;
+      f.querySelector('[name=name]').value = cat.name;
+      f.querySelector('[name=icon]').value = cat.icon;
+      f.querySelector('[name=budgeted]').value = cat.budgeted;
+      f.querySelector('[name=spent]').value = cat.spent;
+      editCatDialog.showModal();
+    }));
+  document.querySelector('#edit-cat-close')?.addEventListener('click', () => editCatDialog.close());
+  document.querySelector('#edit-cat-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const ci = Number(data.get('ci'));
+    state.budget.categories[ci] = {
+      ...state.budget.categories[ci],
+      name:     data.get('name'),
+      icon:     data.get('icon') || state.budget.categories[ci].icon,
+      budgeted: parseFloat(data.get('budgeted')),
+      spent:    parseFloat(data.get('spent')),
+    };
+    editCatDialog.close();
+    render();
+  });
+
+  // add category
+  const addCatDialog = document.querySelector('#add-cat-dialog');
+  document.querySelector('#add-cat-btn')?.addEventListener('click', () => addCatDialog.showModal());
+  document.querySelector('#add-cat-close')?.addEventListener('click', () => addCatDialog.close());
+  document.querySelector('#add-cat-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    state.budget.categories.push({
+      name:     data.get('name'),
+      icon:     data.get('icon') || '📦',
+      budgeted: parseFloat(data.get('budgeted')),
+      spent:    0,
+    });
+    addCatDialog.close();
+    render();
+  });
+
   const txnDialog = document.querySelector('#txn-dialog');
   document.querySelector('#add-txn-btn')?.addEventListener('click', () => txnDialog?.showModal());
   document.querySelector('#txn-close')?.addEventListener('click', () => txnDialog?.close());
