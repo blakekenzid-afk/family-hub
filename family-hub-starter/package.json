@@ -1,0 +1,15 @@
+{
+  "name": "family-hub-starter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Warm, touch-friendly family life organizer starter app.",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "start": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "vite": "latest"
+  }
+}
