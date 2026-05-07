@@ -1,244 +1,240 @@
 import './styles.css';
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+const FAMILY = [
+  { name: 'Mom',  emoji: '👩', color: 'lavender' },
+  { name: 'Dad',  emoji: '👨', color: 'blue' },
+  { name: 'Ava',  emoji: '👧', color: 'pink' },
+  { name: 'Leo',  emoji: '👦', color: 'green' },
+];
+
+const TIME_ICONS  = { morning: '🌤️', afternoon: '☀️', evening: '🌙' };
+const TIME_LABELS = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
+
+const NAV_ITEMS = [
+  { label: 'Tasks',     icon: '✅', view: 'tasks',     cls: 'nv-green'  },
+  { label: 'Calendar',  icon: '📅', view: 'calendar',  cls: 'nv-red'    },
+  { label: 'Meals',     icon: '🍽️', view: 'meals',     cls: 'nv-tan'    },
+  { label: 'Lists',     icon: '📋', view: 'lists',     cls: 'nv-yellow' },
+  { label: 'Groceries', icon: '🛒', view: 'groceries', cls: 'nv-blue'   },
+  { label: 'Profiles',  icon: '👥', view: 'profiles',  cls: 'nv-gray'   },
+];
+
 const state = {
+  view: 'home',
   currentDate: new Date(),
-  selectedDate: new Date(),
-  family: [
-    { name: 'Mom', initial: 'M', color: 'rose' },
-    { name: 'Dad', initial: 'D', color: 'blue' },
-    { name: 'Ava', initial: 'A', color: 'yellow' },
-    { name: 'Leo', initial: 'L', color: 'green' }
+  tasks: [
+    { id: 1,  person: 'Mom', timeOfDay: 'morning',   emoji: '☕', title: 'Morning planning',   done: false },
+    { id: 2,  person: 'Mom', timeOfDay: 'afternoon',  emoji: '🧺', title: 'Do laundry',         done: false },
+    { id: 3,  person: 'Mom', timeOfDay: 'evening',    emoji: '🍳', title: 'Cook dinner',         done: false },
+    { id: 4,  person: 'Dad', timeOfDay: 'morning',   emoji: '🚗', title: 'School drop-off',     done: false },
+    { id: 5,  person: 'Dad', timeOfDay: 'evening',    emoji: '🗑️', title: 'Take out trash',      done: false },
+    { id: 6,  person: 'Ava', timeOfDay: 'morning',   emoji: '🪥', title: 'Brush teeth',         done: false },
+    { id: 7,  person: 'Ava', timeOfDay: 'afternoon',  emoji: '🎹', title: 'Piano practice',      done: false },
+    { id: 8,  person: 'Leo', timeOfDay: 'morning',   emoji: '🪥', title: 'Brush teeth',         done: false },
+    { id: 9,  person: 'Leo', timeOfDay: 'evening',    emoji: '🛁', title: 'Bath time',           done: false },
   ],
   events: [
-    { date: todayOffset(0), title: 'Piano lesson', time: '4:00 PM', person: 'Ava', type: 'activity' },
-    { date: todayOffset(0), title: 'Taco night', time: '6:00 PM', person: 'Family', type: 'meal' },
-    { date: todayOffset(1), title: 'Library books due', time: 'All day', person: 'Family', type: 'reminder' },
-    { date: todayOffset(2), title: 'Soccer practice', time: '5:30 PM', person: 'Leo', type: 'activity' }
-  ],
-  chores: [
-    { title: 'Feed the dog', assignee: 'Leo', done: false },
-    { title: 'Clear table', assignee: 'Ava', done: true },
-    { title: 'Pack lunches', assignee: 'Mom', done: false }
+    { date: todayStr(), title: 'Piano lesson',   time: '4:00 PM', person: 'Ava' },
+    { date: todayStr(), title: 'Soccer practice', time: '5:30 PM', person: 'Leo' },
   ],
   meals: [
     { day: 'Mon', meal: 'Chicken bowls' },
     { day: 'Tue', meal: 'Pasta night' },
     { day: 'Wed', meal: 'Breakfast for dinner' },
     { day: 'Thu', meal: 'Slow cooker soup' },
-    { day: 'Fri', meal: 'Pizza + movie' }
+    { day: 'Fri', meal: 'Pizza + movie night' },
   ],
-  groceries: ['Milk', 'Strawberries', 'Bread', 'Granola bars']
+  groceries: ['Milk', 'Strawberries', 'Bread', 'Granola bars', 'Apples', 'Yogurt'],
 };
 
-function todayOffset(days) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return toISODate(d);
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function fmtShort(date) {
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function toISODate(date) {
-  return date.toISOString().slice(0, 10);
+function fmtLong(date) {
+  return date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
-function sameDay(a, b) {
-  return toISODate(a) === toISODate(b);
-}
+// ── views ─────────────────────────────────────────────────────────────────────
 
-function formatMonth(date) {
-  return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-}
+function renderHome() {
+  const todayEvents = state.events.filter(e => e.date === todayStr());
+  return `
+    <div class="page home-page">
+      <header class="app-header">
+        <span class="header-spacer"></span>
+        <button class="family-name-btn" type="button">diskey <span class="chevron">⌄</span></button>
+        <button class="account-btn" type="button" aria-label="Account">👤</button>
+      </header>
 
-function getMonthDays(date) {
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const first = new Date(year, month, 1);
-  const start = new Date(first);
-  start.setDate(first.getDate() - first.getDay());
+      <nav class="nav-grid" aria-label="Navigation">
+        ${NAV_ITEMS.map(n => `
+          <button class="nav-item" type="button" data-nav="${n.view}">
+            <div class="nav-circle ${n.cls}">${n.icon}</div>
+            <span class="nav-label">${n.label}</span>
+          </button>`).join('')}
+      </nav>
 
-  return Array.from({ length: 42 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    return d;
-  });
-}
-
-function eventsForDate(date) {
-  return state.events.filter(event => event.date === toISODate(date));
-}
-
-function renderAgenda() {
-  const items = eventsForDate(state.selectedDate);
-  if (!items.length) {
-    return '<div class="empty-state">🌤️ Nothing planned yet.<br><span>Add something cozy.</span></div>';
-  }
-
-  return items.map(event => `
-    <div class="agenda-card ${event.type}">
-      <div class="time-badge">${event.time || 'Anytime'}</div>
-      <div>
-        <strong>${event.title}</strong>
-        <small>${event.person}</small>
+      <div class="today-card">
+        <h2 class="today-date">${fmtLong(new Date())}</h2>
+        ${todayEvents.length === 0
+          ? '<p class="no-events">No upcoming events today 😌</p>'
+          : `<ul class="event-list">${todayEvents.map(e => `
+              <li class="event-row">
+                <span class="event-dot"></span>
+                <span class="event-time">${e.time}</span>
+                <span class="event-title">${e.title}</span>
+                <span class="event-person">${e.person}</span>
+              </li>`).join('')}</ul>`}
       </div>
-    </div>
-  `).join('');
+    </div>`;
 }
 
-function render() {
-  document.querySelector('#app').innerHTML = `
-    <main class="shell">
-      <aside class="sidebar">
-        <div class="brand-card">
-          <div class="brand-icon">🏡</div>
-          <div>
-            <p class="eyebrow">Family Hub</p>
-            <h1>Today at Home</h1>
+function renderTaskCard(task) {
+  return `
+    <div class="task-card${task.done ? ' done' : ''}">
+      <div class="task-emoji-area"><span class="task-emoji">${task.emoji}</span></div>
+      <div class="task-footer">
+        <span class="task-title">${task.title}</span>
+        <button class="task-toggle${task.done ? ' checked' : ''}"
+                data-task-toggle="${task.id}" type="button"
+                aria-label="${task.done ? 'Mark incomplete' : 'Mark complete'}"></button>
+      </div>
+    </div>`;
+}
+
+function renderPersonCard(person) {
+  const allTasks = state.tasks.filter(t => t.person === person.name);
+  const done = allTasks.filter(t => t.done).length;
+  const pct  = allTasks.length ? Math.round((done / allTasks.length) * 100) : 0;
+
+  const periods = ['morning', 'afternoon', 'evening']
+    .filter(tp => allTasks.some(t => t.timeOfDay === tp));
+
+  const timeIndicators = periods.map(tp => `
+    <div class="time-indicator">
+      <div class="time-tab-icon">${TIME_ICONS[tp]}</div>
+      <span class="time-tab-label">${TIME_LABELS[tp]}</span>
+    </div>`).join('');
+
+  const sections = periods.map(tp => {
+    const tasks = allTasks.filter(t => t.timeOfDay === tp);
+    return `
+      <div class="time-section">
+        <h4 class="section-heading">${TIME_LABELS[tp]}</h4>
+        <div class="task-list">${tasks.map(renderTaskCard).join('')}</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="person-card ${person.color}">
+      <div class="person-header">
+        <div class="person-avatar">${person.emoji}</div>
+        <div class="person-meta">
+          <h2 class="person-name">${person.name}</h2>
+          <div class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <span class="progress-text">${done}/${allTasks.length}</span>
           </div>
         </div>
-
-        <nav class="nav-stack" aria-label="Main navigation">
-          ${['Dashboard', 'Calendar', 'Meals', 'Chores', 'Lists'].map((item, i) => `
-            <button class="nav-pill ${i === 0 ? 'active' : ''}" type="button">
-              <span>${['✨','📅','🍽️','🧺','🛒'][i]}</span>${item}
-            </button>
-          `).join('')}
-        </nav>
-
-        <section class="mini-card">
-          <p class="eyebrow">Family</p>
-          <div class="avatar-row">
-            ${state.family.map(person => `<div class="avatar ${person.color}" title="${person.name}">${person.initial}</div>`).join('')}
-          </div>
-        </section>
-      </aside>
-
-      <section class="content">
-        <header class="hero">
-          <div>
-            <p class="eyebrow">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-            <h2>Everything your family needs, all in one cozy place.</h2>
-          </div>
-          <button class="primary-btn" type="button" id="add-event-btn">+ Add Event</button>
-        </header>
-
-        <section class="dashboard-grid">
-          <article class="panel calendar-panel">
-            <div class="panel-header">
-              <button class="circle-btn" id="prev-month" aria-label="Previous month">‹</button>
-              <h3>${formatMonth(state.currentDate)}</h3>
-              <button class="circle-btn" id="next-month" aria-label="Next month">›</button>
-            </div>
-            <div class="weekdays">
-              ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => `<span>${day}</span>`).join('')}
-            </div>
-            <div class="calendar-grid">
-              ${getMonthDays(state.currentDate).map(day => {
-                const inMonth = day.getMonth() === state.currentDate.getMonth();
-                const selected = sameDay(day, state.selectedDate);
-                const today = sameDay(day, new Date());
-                const dots = eventsForDate(day).slice(0, 3).map(() => '<i></i>').join('');
-                return `
-                  <button class="day-cell ${inMonth ? '' : 'muted'} ${selected ? 'selected' : ''} ${today ? 'today' : ''}" data-date="${toISODate(day)}">
-                    <span>${day.getDate()}</span>
-                    <div class="event-dots">${dots}</div>
-                  </button>
-                `;
-              }).join('')}
-            </div>
-          </article>
-
-          <article class="panel agenda-panel">
-            <div class="panel-header left">
-              <div><p class="eyebrow">Agenda</p><h3>${state.selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</h3></div>
-            </div>
-            <div class="agenda-list">${renderAgenda()}</div>
-          </article>
-
-          <article class="panel chore-panel">
-            <div class="panel-header left"><div><p class="eyebrow">Chores</p><h3>Household Helpers</h3></div></div>
-            <div class="task-list">
-              ${state.chores.map((chore, index) => `
-                <label class="task-card">
-                  <input type="checkbox" data-chore="${index}" ${chore.done ? 'checked' : ''}>
-                  <span class="checkmark"></span>
-                  <div><strong>${chore.title}</strong><small>${chore.assignee}</small></div>
-                </label>
-              `).join('')}
-            </div>
-          </article>
-
-          <article class="panel meals-panel">
-            <div class="panel-header left"><div><p class="eyebrow">Meals</p><h3>This Week</h3></div></div>
-            <div class="meal-list">
-              ${state.meals.map(item => `<div class="meal-row"><span>${item.day}</span><strong>${item.meal}</strong></div>`).join('')}
-            </div>
-          </article>
-
-          <article class="panel grocery-panel">
-            <div class="panel-header left"><div><p class="eyebrow">Groceries</p><h3>Quick List</h3></div></div>
-            <ul class="grocery-list">${state.groceries.map(item => `<li>${item}</li>`).join('')}</ul>
-          </article>
-        </section>
-      </section>
-    </main>
-
-    <dialog class="event-dialog" id="event-dialog">
-      <form method="dialog" class="dialog-card" id="event-form">
-        <button class="close-btn" value="cancel" aria-label="Close">×</button>
-        <p class="eyebrow">New Event</p>
-        <h3>Add something to the family calendar</h3>
-        <label>Title <input required name="title" placeholder="Dentist appointment"></label>
-        <label>Date <input required name="date" type="date" value="${toISODate(state.selectedDate)}"></label>
-        <label>Time <input name="time" placeholder="3:30 PM"></label>
-        <label>Person <input name="person" placeholder="Family"></label>
-        <button class="primary-btn full" value="default">Save Event</button>
-      </form>
-    </dialog>
-  `;
-
-  bindEvents();
+      </div>
+      <div class="time-indicators">${timeIndicators}</div>
+      ${sections}
+    </div>`;
 }
 
-function bindEvents() {
-  document.querySelector('#prev-month').addEventListener('click', () => {
-    state.currentDate.setMonth(state.currentDate.getMonth() - 1);
-    render();
+function renderTasks() {
+  return `
+    <div class="page tasks-page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">${fmtShort(state.currentDate)}</h1>
+        <div class="tasks-nav">
+          <button class="icon-btn" id="prev-day">‹</button>
+          <button class="icon-btn" id="today-btn">Today</button>
+          <button class="icon-btn" id="next-day">›</button>
+        </div>
+      </header>
+      <div class="persons-grid">
+        ${FAMILY.map(renderPersonCard).join('')}
+      </div>
+      <button class="fab" type="button" aria-label="Add task">+</button>
+    </div>`;
+}
+
+function renderMeals() {
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Meals This Week</h1>
+        <div class="tasks-nav"></div>
+      </header>
+      <div class="simple-list">
+        ${state.meals.map(m => `
+          <div class="simple-row">
+            <span class="simple-day">${m.day}</span>
+            <span class="simple-meal">${m.meal}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderGroceries() {
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Grocery List</h1>
+        <div class="tasks-nav"></div>
+      </header>
+      <div class="grocery-grid">
+        ${state.groceries.map(item => `<div class="grocery-item">🛒 ${item}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── render + bind ─────────────────────────────────────────────────────────────
+
+function render() {
+  const app = document.querySelector('#app');
+  switch (state.view) {
+    case 'tasks':     app.innerHTML = renderTasks();     break;
+    case 'meals':     app.innerHTML = renderMeals();     break;
+    case 'groceries': app.innerHTML = renderGroceries(); break;
+    default:          app.innerHTML = renderHome();
+  }
+  bind();
+}
+
+function bind() {
+  document.querySelectorAll('[data-nav]').forEach(btn =>
+    btn.addEventListener('click', () => { state.view = btn.dataset.nav; render(); }));
+
+  document.querySelectorAll('[data-task-toggle]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const task = state.tasks.find(t => t.id === Number(btn.dataset.taskToggle));
+      if (task) { task.done = !task.done; render(); }
+    }));
+
+  document.querySelector('#prev-day')?.addEventListener('click', () => {
+    state.currentDate.setDate(state.currentDate.getDate() - 1); render();
   });
-
-  document.querySelector('#next-month').addEventListener('click', () => {
-    state.currentDate.setMonth(state.currentDate.getMonth() + 1);
-    render();
+  document.querySelector('#next-day')?.addEventListener('click', () => {
+    state.currentDate.setDate(state.currentDate.getDate() + 1); render();
   });
-
-  document.querySelectorAll('.day-cell').forEach(button => {
-    button.addEventListener('click', () => {
-      state.selectedDate = new Date(button.dataset.date + 'T12:00:00');
-      render();
-    });
-  });
-
-  document.querySelectorAll('[data-chore]').forEach(input => {
-    input.addEventListener('change', () => {
-      state.chores[Number(input.dataset.chore)].done = input.checked;
-      render();
-    });
-  });
-
-  const dialog = document.querySelector('#event-dialog');
-  document.querySelector('#add-event-btn').addEventListener('click', () => dialog.showModal());
-
-  document.querySelector('#event-form').addEventListener('submit', event => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    state.events.push({
-      title: data.get('title'),
-      date: data.get('date'),
-      time: data.get('time') || 'Anytime',
-      person: data.get('person') || 'Family',
-      type: 'reminder'
-    });
-    dialog.close();
-    render();
+  document.querySelector('#today-btn')?.addEventListener('click', () => {
+    state.currentDate = new Date(); render();
   });
 }
+
+// ── boot ──────────────────────────────────────────────────────────────────────
 
 render();
