@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { label: 'Meals',     icon: '🍽️', view: 'meals',     cls: 'nv-tan'    },
   { label: 'Lists',     icon: '📋', view: 'lists',     cls: 'nv-yellow' },
   { label: 'Groceries', icon: '🛒', view: 'groceries', cls: 'nv-blue'   },
+  { label: 'Budget',    icon: '💰', view: 'budget',    cls: 'nv-mint'   },
   { label: 'Profiles',  icon: '👥', view: 'profiles',  cls: 'nv-gray'   },
 ];
 
@@ -49,6 +50,21 @@ const state = {
     { day: 'Fri', meal: 'Pizza + movie night' },
   ],
   groceries: ['Milk', 'Strawberries', 'Bread', 'Granola bars', 'Apples', 'Yogurt'],
+  budget: {
+    monthly: 3500,
+    categories: [
+      { name: 'Groceries',   icon: '🛒', budgeted: 600,  spent: 312 },
+      { name: 'Dining out',  icon: '🍕', budgeted: 200,  spent: 87  },
+      { name: 'Activities',  icon: '🎨', budgeted: 150,  spent: 60  },
+      { name: 'Household',   icon: '🏠', budgeted: 400,  spent: 220 },
+      { name: 'Transport',   icon: '🚗', budgeted: 300,  spent: 145 },
+    ],
+    transactions: [
+      { date: todayStr(), desc: 'Trader Joe\'s', amount: 78.42,  category: 'Groceries'  },
+      { date: todayStr(), desc: 'Soccer cleats',  amount: 45.00,  category: 'Activities' },
+      { date: todayStr(), desc: 'Pizza Friday',   amount: 32.50,  category: 'Dining out' },
+    ],
+  },
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -257,6 +273,83 @@ function renderLists() {
     </div>`;
 }
 
+function renderBudget() {
+  const { monthly, categories, transactions } = state.budget;
+  const totalSpent = categories.reduce((s, c) => s + c.spent, 0);
+  const totalBudgeted = categories.reduce((s, c) => s + c.budgeted, 0);
+  const overallPct = Math.min(100, Math.round((totalSpent / totalBudgeted) * 100));
+
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Budget</h1>
+        <div class="tasks-nav"></div>
+      </header>
+
+      <div class="budget-summary">
+        <div class="budget-total">
+          <p class="budget-label">Month so far</p>
+          <p class="budget-amount">$${totalSpent.toFixed(2)} <span>/ $${totalBudgeted}</span></p>
+          <div class="budget-bar-wrap">
+            <div class="budget-bar-fill" style="width:${overallPct}%"></div>
+          </div>
+          <p class="budget-pct">${overallPct}% used</p>
+        </div>
+      </div>
+
+      <h3 class="section-label">Categories</h3>
+      <div class="budget-cats">
+        ${categories.map(cat => {
+          const pct = Math.min(100, Math.round((cat.spent / cat.budgeted) * 100));
+          const over = cat.spent > cat.budgeted;
+          return `
+            <div class="budget-cat">
+              <div class="budget-cat-icon">${cat.icon}</div>
+              <div class="budget-cat-info">
+                <div class="budget-cat-top">
+                  <span class="budget-cat-name">${cat.name}</span>
+                  <span class="budget-cat-amt${over ? ' over' : ''}">$${cat.spent} / $${cat.budgeted}</span>
+                </div>
+                <div class="budget-bar-wrap sm">
+                  <div class="budget-bar-fill${over ? ' over' : ''}" style="width:${pct}%"></div>
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+
+      <h3 class="section-label">Recent Transactions</h3>
+      <div class="txn-list">
+        ${transactions.slice().reverse().map(t => `
+          <div class="txn-row">
+            <div class="txn-left">
+              <span class="txn-desc">${t.desc}</span>
+              <span class="txn-cat">${t.category}</span>
+            </div>
+            <span class="txn-amt">-$${t.amount.toFixed(2)}</span>
+          </div>`).join('')}
+      </div>
+
+      <button class="add-txn-btn" id="add-txn-btn" type="button">+ Add Transaction</button>
+
+      <dialog class="event-dialog" id="txn-dialog">
+        <form class="dialog-card" id="txn-form">
+          <button class="close-btn" type="button" id="txn-close">×</button>
+          <p class="eyebrow">New Transaction</p>
+          <label>Description <input required name="desc" placeholder="Coffee shop"></label>
+          <label>Amount ($) <input required name="amount" type="number" step="0.01" min="0" placeholder="12.50"></label>
+          <label>Category
+            <select name="category">
+              ${categories.map(c => `<option>${c.name}</option>`).join('')}
+            </select>
+          </label>
+          <button class="primary-btn full" type="submit">Save</button>
+        </form>
+      </dialog>
+    </div>`;
+}
+
 function renderProfiles() {
   return `
     <div class="page">
@@ -285,6 +378,7 @@ function render() {
     case 'groceries': app.innerHTML = renderGroceries(); break;
     case 'calendar':  app.innerHTML = renderCalendar();  break;
     case 'lists':     app.innerHTML = renderLists();      break;
+    case 'budget':    app.innerHTML = renderBudget();     break;
     case 'profiles':  app.innerHTML = renderProfiles();   break;
     default:          app.innerHTML = renderHome();
   }
@@ -317,6 +411,25 @@ function bind() {
   });
   document.querySelector('#cal-next')?.addEventListener('click', () => {
     state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() + 1, 1);
+    render();
+  });
+
+  const txnDialog = document.querySelector('#txn-dialog');
+  document.querySelector('#add-txn-btn')?.addEventListener('click', () => txnDialog.showModal());
+  document.querySelector('#txn-close')?.addEventListener('click', () => txnDialog.close());
+  document.querySelector('#txn-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const cat = state.budget.categories.find(c => c.name === data.get('category'));
+    const amount = parseFloat(data.get('amount'));
+    if (cat) cat.spent = Math.round((cat.spent + amount) * 100) / 100;
+    state.budget.transactions.push({
+      date: todayStr(),
+      desc: data.get('desc'),
+      amount,
+      category: data.get('category'),
+    });
+    txnDialog.close();
     render();
   });
 }
