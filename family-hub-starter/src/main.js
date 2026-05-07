@@ -4,13 +4,6 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-const FAMILY = [
-  { name: 'Mom',  emoji: '👩', color: 'lavender' },
-  { name: 'Dad',  emoji: '👨', color: 'blue' },
-  { name: 'Ava',  emoji: '👧', color: 'pink' },
-  { name: 'Leo',  emoji: '👦', color: 'green' },
-];
-
 const TIME_ICONS  = { morning: '🌤️', afternoon: '☀️', evening: '🌙' };
 const TIME_LABELS = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
 
@@ -39,8 +32,8 @@ const state = {
     { id: 9,  person: 'Leo', timeOfDay: 'evening',    emoji: '🛁', title: 'Bath time',           done: false },
   ],
   events: [
-    { date: todayStr(), title: 'Piano lesson',   time: '4:00 PM', person: 'Ava' },
-    { date: todayStr(), title: 'Soccer practice', time: '5:30 PM', person: 'Leo' },
+    { id: 1, date: todayStr(), title: 'Piano lesson',   time: '4:00 PM', person: 'Ava' },
+    { id: 2, date: todayStr(), title: 'Soccer practice', time: '5:30 PM', person: 'Leo' },
   ],
   meals: [
     { day: 'Mon', meal: 'Chicken bowls' },
@@ -48,21 +41,24 @@ const state = {
     { day: 'Wed', meal: 'Breakfast for dinner' },
     { day: 'Thu', meal: 'Slow cooker soup' },
     { day: 'Fri', meal: 'Pizza + movie night' },
+    { day: 'Sat', meal: '' },
+    { day: 'Sun', meal: '' },
   ],
   groceries: [
-    { category: 'Produce',    items: ['Strawberries', 'Apples'] },
-    { category: 'Dairy',      items: ['Milk', 'Yogurt'] },
-    { category: 'Pantry',     items: ['Bread', 'Granola bars'] },
+    { category: 'Produce',    items: [{ text: 'Strawberries', checked: false }, { text: 'Apples', checked: false }] },
+    { category: 'Dairy',      items: [{ text: 'Milk', checked: false }, { text: 'Yogurt', checked: false }] },
+    { category: 'Pantry',     items: [{ text: 'Bread', checked: false }, { text: 'Granola bars', checked: false }] },
   ],
   lists: [
-    { id: 1, name: 'School supplies', items: ['Pencils', 'Notebook', 'Backpack'] },
-    { id: 2, name: 'Birthday wish list', items: ['Legos', 'Art supplies'] },
-    { id: 3, name: 'Camping packing', items: ['Tent', 'Sleeping bags', 'Flashlight'] },
+    { id: 1, name: 'School supplies',   items: [{ text: 'Pencils', checked: false }, { text: 'Notebook', checked: false }, { text: 'Backpack', checked: false }] },
+    { id: 2, name: 'Birthday wish list', items: [{ text: 'Legos', checked: false }, { text: 'Art supplies', checked: false }] },
+    { id: 3, name: 'Camping packing',   items: [{ text: 'Tent', checked: false }, { text: 'Sleeping bags', checked: false }, { text: 'Flashlight', checked: false }] },
   ],
   nextTaskId: 10,
   nextListId: 4,
   nextNotifId: 4,
   nextRecipeId: 4,
+  nextEventId: 3,
   editingMealIdx: null,
   selectedRecipeId: null,
   recipes: [
@@ -121,7 +117,7 @@ function renderHome() {
           ${unread > 0 ? `<span class="notif-badge">${unread}</span>` : ''}
         </button>
         <button class="family-name-btn" type="button">diskey <span class="chevron">⌄</span></button>
-        <button class="account-btn" type="button" aria-label="Account">👤</button>
+        <button class="account-btn" type="button" data-nav="profiles" aria-label="Account">👤</button>
       </header>
 
       <nav class="nav-grid" aria-label="Navigation">
@@ -206,15 +202,11 @@ function renderPersonCard(person) {
 function renderTasks() {
   return `
     <div class="page tasks-page">
-      <header class="tasks-header">
+      <div class="tasks-header" style="margin-bottom:0">
         <button class="back-btn" type="button" data-nav="home">←</button>
-        <h1 class="tasks-date">${fmtShort(state.currentDate)}</h1>
-        <div class="tasks-nav">
-          <button class="icon-btn" id="prev-day">‹</button>
-          <button class="icon-btn" id="today-btn">Today</button>
-          <button class="icon-btn" id="next-day">›</button>
-        </div>
-      </header>
+        <h1 class="tasks-date">Tasks</h1>
+        <div class="tasks-nav"></div>
+      </div>
       <div class="persons-grid">
         ${state.profiles.map(renderPersonCard).join('')}
       </div>
@@ -293,7 +285,8 @@ function renderMeals() {
       <dialog class="event-dialog" id="recipe-dialog">
         <form class="dialog-card" id="recipe-form">
           <button class="close-btn" type="button" id="recipe-close">×</button>
-          <p class="eyebrow">New Recipe</p>
+          <p class="eyebrow" id="recipe-dialog-title">New Recipe</p>
+          <input type="hidden" name="recipe-id" value="">
           <label>Name        <input required name="name" placeholder="Chicken Tacos"></label>
           <label>Emoji       <input name="emoji" maxlength="2" placeholder="🍽️" value="🍽️"></label>
           <label>Ingredients
@@ -326,13 +319,20 @@ function renderGroceries() {
       </header>
       ${state.groceries.map((cat, ci) => {
         const pal = GROCERY_PALETTE[ci % GROCERY_PALETTE.length];
+        const doneCount = cat.items.filter(i => i.checked).length;
         return `
         <div class="grocery-cat-block">
-          <div class="grocery-cat-header" style="background:${pal.bg};color:${pal.text}">${cat.category}</div>
+          <div class="grocery-cat-row">
+            <div class="grocery-cat-header" style="background:${pal.bg};color:${pal.text}">${cat.category}</div>
+            <span class="cat-count">${doneCount}/${cat.items.length}</span>
+            <button class="icon-btn" data-rename-grocery-cat="${ci}" type="button" style="font-size:0.8rem">✏️</button>
+            <button class="del-sm" data-del-grocery-cat="${ci}" type="button" aria-label="Delete category">×</button>
+          </div>
           <div class="item-list">
             ${cat.items.map((item, ii) => `
-              <div class="item-row">
-                <span>🛒 ${item}</span>
+              <div class="item-row${item.checked ? ' item-checked' : ''}">
+                <button class="check-circle${item.checked ? ' done' : ''}" data-check-grocery data-ci="${ci}" data-ii="${ii}" type="button" aria-label="Toggle"></button>
+                <span class="item-text">${item.text}</span>
                 <button class="del-sm" data-del-grocery-item data-ci="${ci}" data-ii="${ii}" type="button" aria-label="Remove">×</button>
               </div>`).join('')}
           </div>
@@ -346,6 +346,15 @@ function renderGroceries() {
         <input name="cat" placeholder="New category name..." required>
         <button type="submit" class="add-item-submit">+ Category</button>
       </form>
+      <dialog class="event-dialog" id="rename-grocery-cat-dialog">
+        <form class="dialog-card" id="rename-grocery-cat-form">
+          <button class="close-btn" type="button" id="rename-grocery-cat-close">×</button>
+          <p class="eyebrow">Rename Category</p>
+          <input type="hidden" name="ci">
+          <label>Name <input required name="name" placeholder="Produce"></label>
+          <button class="primary-btn full" type="submit">Save</button>
+        </form>
+      </dialog>
     </div>`;
 }
 
@@ -385,7 +394,7 @@ function renderCalendar() {
                 ${evts.map(e => `
                   <div class="cal-evt">
                     ${e.title}
-                    <button class="cal-evt-del" data-del-event="${state.events.indexOf(e)}" type="button" aria-label="Remove">×</button>
+                    <button class="cal-evt-del" data-del-event="${e.id}" type="button" aria-label="Remove">×</button>
                   </div>`).join('')}
               </div>`;
           }).join('')}
@@ -414,13 +423,21 @@ function renderLists() {
         <div class="tasks-nav"></div>
       </header>
       <div class="lists-wrap">
-        ${state.lists.map(list => `
+        ${state.lists.map(list => {
+          const doneCount = list.items.filter(i => i.checked).length;
+          return `
           <div class="list-card">
-            <h3 class="list-card-title">${list.name}</h3>
+            <div class="list-card-header">
+              <h3 class="list-card-title">${list.name}</h3>
+              <span class="cat-count">${doneCount}/${list.items.length}</span>
+              <button class="icon-btn" data-rename-list="${list.id}" type="button" style="font-size:0.8rem">✏️</button>
+              <button class="del-sm" data-del-list="${list.id}" type="button" aria-label="Delete list">×</button>
+            </div>
             <div class="list-items">
               ${list.items.map((item, i) => `
-                <div class="list-item-row">
-                  <span>${item}</span>
+                <div class="list-item-row${item.checked ? ' item-checked' : ''}">
+                  <button class="check-circle${item.checked ? ' done' : ''}" data-check-list="${list.id}" data-item-idx="${i}" type="button" aria-label="Toggle"></button>
+                  <span class="item-text">${item.text}</span>
                   <button class="del-sm" data-del-list-item="${list.id}" data-item-idx="${i}" type="button" aria-label="Remove">×</button>
                 </div>`).join('')}
             </div>
@@ -428,7 +445,8 @@ function renderLists() {
               <input name="item" placeholder="Add item..." required>
               <button type="submit" class="add-item-submit">Add</button>
             </form>
-          </div>`).join('')}
+          </div>`;
+        }).join('')}
       </div>
       <button class="add-list-btn" id="add-list-btn" type="button">+ New List</button>
       <dialog class="event-dialog" id="new-list-dialog">
@@ -437,6 +455,15 @@ function renderLists() {
           <p class="eyebrow">New List</p>
           <label>List name <input required name="name" placeholder="Vacation packing"></label>
           <button class="primary-btn full" type="submit">Create List</button>
+        </form>
+      </dialog>
+      <dialog class="event-dialog" id="rename-list-dialog">
+        <form class="dialog-card" id="rename-list-form">
+          <button class="close-btn" type="button" id="rename-list-close">×</button>
+          <p class="eyebrow">Rename List</p>
+          <input type="hidden" name="id">
+          <label>Name <input required name="name" placeholder="Shopping list"></label>
+          <button class="primary-btn full" type="submit">Save</button>
         </form>
       </dialog>
     </div>`;
@@ -464,6 +491,11 @@ function renderBudget() {
             <div class="budget-bar-fill" style="width:${overallPct}%"></div>
           </div>
           <p class="budget-pct">${overallPct}% used</p>
+        </div>
+        <div class="budget-monthly-row">
+          <span class="budget-label">Monthly income</span>
+          <span class="budget-monthly-amt" id="monthly-display">$${monthly.toLocaleString()}</span>
+          <button class="icon-btn" id="edit-monthly-btn" type="button" style="font-size:0.8rem">✏️</button>
         </div>
       </div>
 
@@ -499,7 +531,7 @@ function renderBudget() {
           <div class="txn-row">
             <div class="txn-left">
               <span class="txn-desc">${t.desc}</span>
-              <span class="txn-cat">${t.category}</span>
+              <span class="txn-cat">${t.category} · ${t.date}</span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <span class="txn-amt">-$${t.amount.toFixed(2)}</span>
@@ -509,6 +541,15 @@ function renderBudget() {
       </div>
 
       <button class="add-txn-btn" id="add-txn-btn" type="button">+ Add Transaction</button>
+
+      <dialog class="event-dialog" id="edit-monthly-dialog">
+        <form class="dialog-card" id="edit-monthly-form">
+          <button class="close-btn" type="button" id="edit-monthly-close">×</button>
+          <p class="eyebrow">Monthly Income</p>
+          <label>Amount ($) <input required name="monthly" type="number" min="0" step="1" placeholder="3500"></label>
+          <button class="primary-btn full" type="submit">Save</button>
+        </form>
+      </dialog>
 
       <dialog class="event-dialog" id="edit-cat-dialog">
         <form class="dialog-card" id="edit-cat-form">
@@ -651,12 +692,39 @@ function renderProfiles() {
               <option value="blue">Blue</option>
               <option value="pink">Pink</option>
               <option value="green">Green</option>
+              <option value="orange">Orange</option>
+              <option value="teal">Teal</option>
+              <option value="yellow">Yellow</option>
+              <option value="red">Red</option>
             </select>
           </label>
           <button class="primary-btn full" type="submit">Add Person</button>
         </form>
       </dialog>
     </div>`;
+}
+
+// ── persistence ───────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'family-hub-v1';
+
+function saveState() {
+  try {
+    const s = { ...state, currentDate: state.currentDate.toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    Object.assign(state, saved);
+    state.currentDate = saved.currentDate ? new Date(saved.currentDate) : new Date();
+    state.editingMealIdx = null;
+    state.selectedRecipeId = null;
+  } catch {}
 }
 
 // ── assign recipe helper ──────────────────────────────────────────────────────
@@ -683,6 +751,7 @@ function assignRecipeToDay(recipeId, dayIdx) {
 // ── render + bind ─────────────────────────────────────────────────────────────
 
 function render() {
+  saveState();
   const app = document.querySelector('#app');
   switch (state.view) {
     case 'tasks':     app.innerHTML = renderTasks();     break;
@@ -816,57 +885,135 @@ function bind() {
       render();
     }));
 
-  // Add recipe dialog
+  // Add / Edit recipe dialog
   const recipeDialog = document.querySelector('#recipe-dialog');
-  document.querySelector('#add-recipe-btn')?.addEventListener('click', () => recipeDialog.showModal());
+  document.querySelector('#add-recipe-btn')?.addEventListener('click', () => {
+    const f = document.querySelector('#recipe-form');
+    f.querySelector('[name=recipe-id]').value = '';
+    document.querySelector('#recipe-dialog-title').textContent = 'New Recipe';
+    f.reset();
+    f.querySelector('[name=emoji]').value = '🍽️';
+    recipeDialog.showModal();
+  });
+  document.querySelectorAll('[data-edit-recipe]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const recipe = state.recipes.find(r => r.id === Number(btn.dataset.editRecipe));
+      if (!recipe) return;
+      const f = document.querySelector('#recipe-form');
+      f.querySelector('[name=recipe-id]').value = recipe.id;
+      f.querySelector('[name=name]').value = recipe.name;
+      f.querySelector('[name=emoji]').value = recipe.emoji;
+      f.querySelector('[name=ingredients]').value = recipe.ingredients.join('\n');
+      document.querySelector('#recipe-dialog-title').textContent = 'Edit Recipe';
+      recipeDialog.showModal();
+    }));
   document.querySelector('#recipe-close')?.addEventListener('click', () => { recipeDialog.close(); });
   document.querySelector('#recipe-form')?.addEventListener('submit', e => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const ingredients = (data.get('ingredients') || '').split('\n').map(s => s.trim()).filter(Boolean);
-    state.recipes.push({
-      id: state.nextRecipeId++,
-      name: data.get('name'),
-      emoji: data.get('emoji') || '🍽️',
-      ingredients,
-    });
+    const existingId = data.get('recipe-id');
+    if (existingId) {
+      const r = state.recipes.find(r => r.id === Number(existingId));
+      if (r) { r.name = data.get('name'); r.emoji = data.get('emoji') || '🍽️'; r.ingredients = ingredients; }
+    } else {
+      state.recipes.push({ id: state.nextRecipeId++, name: data.get('name'), emoji: data.get('emoji') || '🍽️', ingredients });
+    }
     recipeDialog.close();
     e.currentTarget.reset();
     render();
   });
 
   // ── Groceries (categorised) ─────────────────────────────────────────────────────
+  document.querySelectorAll('[data-check-grocery]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const ci = Number(btn.dataset.ci), ii = Number(btn.dataset.ii);
+      state.groceries[ci].items[ii].checked = !state.groceries[ci].items[ii].checked;
+      render();
+    }));
   document.querySelectorAll('[data-del-grocery-item]').forEach(btn =>
     btn.addEventListener('click', () => {
       const ci = Number(btn.dataset.ci), ii = Number(btn.dataset.ii);
       state.groceries[ci].items.splice(ii, 1);
       render();
     }));
+  document.querySelectorAll('[data-del-grocery-cat]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.groceries.splice(Number(btn.dataset.delGroceryCat), 1);
+      render();
+    }));
+  const renameGroceryCatDialog = document.querySelector('#rename-grocery-cat-dialog');
+  document.querySelectorAll('[data-rename-grocery-cat]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const ci = Number(btn.dataset.renameGroceryCat);
+      const f = document.querySelector('#rename-grocery-cat-form');
+      f.querySelector('[name=ci]').value = ci;
+      f.querySelector('[name=name]').value = state.groceries[ci].category;
+      renameGroceryCatDialog.showModal();
+    }));
+  document.querySelector('#rename-grocery-cat-close')?.addEventListener('click', () => renameGroceryCatDialog.close());
+  document.querySelector('#rename-grocery-cat-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    state.groceries[Number(data.get('ci'))].category = data.get('name');
+    renameGroceryCatDialog.close();
+    render();
+  });
   document.querySelectorAll('[data-add-grocery]').forEach(form =>
     form.addEventListener('submit', e => {
       e.preventDefault();
       const ci = Number(form.dataset.addGrocery);
       const item = new FormData(e.currentTarget).get('item').trim();
-      if (item) { state.groceries[ci].items.push(item); render(); }
+      if (item) { state.groceries[ci].items.push({ text: item, checked: false }); e.currentTarget.reset(); render(); }
     }));
   document.querySelector('#add-grocery-cat-form')?.addEventListener('submit', e => {
     e.preventDefault();
     const name = new FormData(e.currentTarget).get('cat').trim();
-    if (name) { state.groceries.push({ category: name, items: [] }); render(); }
+    if (name) { state.groceries.push({ category: name, items: [] }); e.currentTarget.reset(); render(); }
   });
 
   // ── Lists ─────────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-check-list]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const list = state.lists.find(l => l.id === Number(btn.dataset.checkList));
+      if (list) { list.items[Number(btn.dataset.itemIdx)].checked = !list.items[Number(btn.dataset.itemIdx)].checked; render(); }
+    }));
   document.querySelectorAll('[data-del-list-item]').forEach(btn =>
     btn.addEventListener('click', () => {
       const list = state.lists.find(l => l.id === Number(btn.dataset.delListItem));
       if (list) { list.items.splice(Number(btn.dataset.itemIdx), 1); render(); }
     }));
+  document.querySelectorAll('[data-del-list]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.lists = state.lists.filter(l => l.id !== Number(btn.dataset.delList));
+      render();
+    }));
+  const renameListDialog = document.querySelector('#rename-list-dialog');
+  document.querySelectorAll('[data-rename-list]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const list = state.lists.find(l => l.id === Number(btn.dataset.renameList));
+      if (!list) return;
+      const f = document.querySelector('#rename-list-form');
+      f.querySelector('[name=id]').value = list.id;
+      f.querySelector('[name=name]').value = list.name;
+      renameListDialog.showModal();
+    }));
+  document.querySelector('#rename-list-close')?.addEventListener('click', () => renameListDialog.close());
+  document.querySelector('#rename-list-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const list = state.lists.find(l => l.id === Number(data.get('id')));
+    if (list) list.name = data.get('name');
+    renameListDialog.close();
+    render();
+  });
   document.querySelectorAll('[data-add-list]').forEach(form =>
     form.addEventListener('submit', e => {
       e.preventDefault();
       const list = state.lists.find(l => l.id === Number(form.dataset.addList));
       const item = new FormData(e.currentTarget).get('item').trim();
-      if (list && item) { list.items.push(item); render(); }
+      if (list && item) { list.items.push({ text: item, checked: false }); e.currentTarget.reset(); render(); }
     }));
   const newListDialog = document.querySelector('#new-list-dialog');
   document.querySelector('#add-list-btn')?.addEventListener('click', () => newListDialog.showModal());
@@ -890,18 +1037,31 @@ function bind() {
   document.querySelector('#cal-form')?.addEventListener('submit', e => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    state.events.push({ title: data.get('title'), date: data.get('date'), time: data.get('time') || 'Anytime', person: data.get('person') || 'Family' });
+    state.events.push({ id: state.nextEventId++, title: data.get('title'), date: data.get('date'), time: data.get('time') || 'Anytime', person: data.get('person') || 'Family' });
     calDialog.close();
+    e.currentTarget.reset();
     render();
   });
   document.querySelectorAll('[data-del-event]').forEach(btn =>
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      state.events.splice(Number(btn.dataset.delEvent), 1);
+      state.events = state.events.filter(ev => ev.id !== Number(btn.dataset.delEvent));
       render();
     }));
 
   // ── Budget ──────────────────────────────────────────────────────────────
+  const editMonthlyDialog = document.querySelector('#edit-monthly-dialog');
+  document.querySelector('#edit-monthly-btn')?.addEventListener('click', () => {
+    document.querySelector('#edit-monthly-form [name=monthly]').value = state.budget.monthly;
+    editMonthlyDialog.showModal();
+  });
+  document.querySelector('#edit-monthly-close')?.addEventListener('click', () => editMonthlyDialog.close());
+  document.querySelector('#edit-monthly-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    state.budget.monthly = parseFloat(new FormData(e.currentTarget).get('monthly'));
+    editMonthlyDialog.close();
+    render();
+  });
   document.querySelectorAll('[data-del-txn]').forEach(btn =>
     btn.addEventListener('click', () => {
       const idx = Number(btn.dataset.delTxn);
@@ -1052,4 +1212,5 @@ function bind() {
 
 // ── boot ──────────────────────────────────────────────────────────────────────
 
+loadState();
 render();

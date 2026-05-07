@@ -776,3 +776,107 @@ h1, h2, h3, h4 { line-height: 1.1; }
   .cal-cell { min-height: 44px; padding: 4px 3px; }
 }
 
+/* ── Extra profile colour tokens ───────────────────────────────────────────── */
+:root {
+  --orange-bg:  #fdeede;
+  --orange-acc: #e07830;
+  --teal-bg:    #ddf4f0;
+  --teal-acc:   #2aaa8e;
+  --yellow-bg:  #fdf6d4;
+  --yellow-acc: #c9a000;
+  --red-bg:     #fde4e4;
+  --red-acc:    #d43a3a;
+}
+
+/* profile-card colour variants */
+.profile-card.orange { background: var(--orange-bg); }
+.profile-card.teal   { background: var(--teal-bg);   }
+.profile-card.yellow { background: var(--yellow-bg); }
+.profile-card.red    { background: var(--red-bg);    }
+
+/* person-card colour variants */
+.person-card.orange { background: var(--orange-bg); }
+.person-card.teal   { background: var(--teal-bg);   }
+.person-card.yellow { background: var(--yellow-bg); }
+.person-card.red    { background: var(--red-bg);    }
+
+/* progress-fill colour variants */
+.person-card.orange .progress-fill { background: var(--orange-acc); }
+.person-card.teal   .progress-fill { background: var(--teal-acc);   }
+.person-card.yellow .progress-fill { background: var(--yellow-acc); }
+.person-card.red    .progress-fill { background: var(--red-acc);    }
+
+/* task-toggle colour variants */
+.person-card.orange .task-toggle.checked { background: var(--orange-acc); }
+.person-card.teal   .task-toggle.checked { background: var(--teal-acc);   }
+.person-card.yellow .task-toggle.checked { background: var(--yellow-acc); }
+.person-card.red    .task-toggle.checked { background: var(--red-acc);    }
+
+/* ── Check circle (groceries + lists) ─────────────────────────────────────── */
+.check-circle {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--white);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  padding: 0;
+}
+.check-circle.done {
+  background: var(--green-acc);
+  border-color: var(--green-acc);
+}
+.check-circle.done::after {
+  content: '✓';
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+/* ── Checked item state ────────────────────────────────────────────────────── */
+.item-checked .item-text {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.item-checked { opacity: 0.6; }
+
+/* ── Grocery category header row ──────────────────────────────────────────── */
+.grocery-cat-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 4px 4px;
+}
+.grocery-cat-row .cat-title {
+  flex: 1;
+  font-weight: 800; font-size: 0.85rem;
+  color: var(--lavender-acc);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.cat-count {
+  font-size: 0.78rem; color: var(--muted);
+  background: var(--bg); border-radius: 20px;
+  padding: 1px 7px;
+}
+
+/* ── List card header ─────────────────────────────────────────────────────── */
+.list-card-header {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 4px;
+}
+.list-card-header .list-card-title {
+  flex: 1; font-weight: 800; font-size: 1rem;
+}
+.list-item-count {
+  font-size: 0.78rem; color: var(--muted);
+}
+
+/* ── Budget monthly row ───────────────────────────────────────────────────── */
+.budget-monthly-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px 0;
+  font-size: 0.92rem; color: var(--muted);
+}
+.budget-monthly-amt {
+  font-weight: 800; color: var(--ink); font-size: 1.1rem;
+}
+
