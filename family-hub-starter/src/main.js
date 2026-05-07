@@ -50,6 +50,14 @@ const state = {
     { day: 'Fri', meal: 'Pizza + movie night' },
   ],
   groceries: ['Milk', 'Strawberries', 'Bread', 'Granola bars', 'Apples', 'Yogurt'],
+  lists: [
+    { id: 1, name: 'School supplies', items: ['Pencils', 'Notebook', 'Backpack'] },
+    { id: 2, name: 'Birthday wish list', items: ['Legos', 'Art supplies'] },
+    { id: 3, name: 'Camping packing', items: ['Tent', 'Sleeping bags', 'Flashlight'] },
+  ],
+  nextTaskId: 10,
+  nextListId: 4,
+  editingMealIdx: null,
   budget: {
     monthly: 3500,
     categories: [
@@ -118,9 +126,12 @@ function renderTaskCard(task) {
       <div class="task-emoji-area"><span class="task-emoji">${task.emoji}</span></div>
       <div class="task-footer">
         <span class="task-title">${task.title}</span>
-        <button class="task-toggle${task.done ? ' checked' : ''}"
-                data-task-toggle="${task.id}" type="button"
-                aria-label="${task.done ? 'Mark incomplete' : 'Mark complete'}"></button>
+        <div class="task-actions">
+          <button class="task-toggle${task.done ? ' checked' : ''}"
+                  data-task-toggle="${task.id}" type="button"
+                  aria-label="${task.done ? 'Mark incomplete' : 'Mark complete'}"></button>
+          <button class="del-sm" data-del-task="${task.id}" type="button" aria-label="Delete task">×</button>
+        </div>
       </div>
     </div>`;
 }
@@ -180,7 +191,28 @@ function renderTasks() {
       <div class="persons-grid">
         ${FAMILY.map(renderPersonCard).join('')}
       </div>
-      <button class="fab" type="button" aria-label="Add task">+</button>
+      <button class="fab" id="open-task-dialog" type="button" aria-label="Add task">+</button>
+      <dialog class="event-dialog" id="task-dialog">
+        <form class="dialog-card" id="task-form">
+          <button class="close-btn" type="button" id="task-close">×</button>
+          <p class="eyebrow">New Task</p>
+          <label>Person
+            <select name="person">
+              ${FAMILY.map(p => `<option>${p.name}</option>`).join('')}
+            </select>
+          </label>
+          <label>Time of Day
+            <select name="timeOfDay">
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+            </select>
+          </label>
+          <label>Emoji <input name="emoji" placeholder="📌" maxlength="2" value="📌"></label>
+          <label>Task <input required name="title" placeholder="Pack school bag"></label>
+          <button class="primary-btn full" type="submit">Save Task</button>
+        </form>
+      </dialog>
     </div>`;
 }
 
@@ -193,11 +225,20 @@ function renderMeals() {
         <div class="tasks-nav"></div>
       </header>
       <div class="simple-list">
-        ${state.meals.map(m => `
-          <div class="simple-row">
-            <span class="simple-day">${m.day}</span>
-            <span class="simple-meal">${m.meal}</span>
-          </div>`).join('')}
+        ${state.meals.map((m, i) => state.editingMealIdx === i
+          ? `<div class="simple-row">
+               <span class="simple-day">${m.day}</span>
+               <form class="meal-edit-form" data-meal-idx="${i}">
+                 <input class="meal-edit-input" name="meal" value="${m.meal}" required autofocus>
+                 <button class="icon-btn" type="submit">✓</button>
+               </form>
+             </div>`
+          : `<div class="simple-row">
+               <span class="simple-day">${m.day}</span>
+               <span class="simple-meal">${m.meal}</span>
+               <button class="edit-icon-btn" data-edit-meal="${i}" type="button">✏️</button>
+             </div>`
+        ).join('')}
       </div>
     </div>`;
 }
@@ -210,9 +251,17 @@ function renderGroceries() {
         <h1 class="tasks-date">Grocery List</h1>
         <div class="tasks-nav"></div>
       </header>
-      <div class="grocery-grid">
-        ${state.groceries.map(item => `<div class="grocery-item">🛒 ${item}</div>`).join('')}
+      <div class="item-list">
+        ${state.groceries.map((item, i) => `
+          <div class="item-row">
+            <span>🛒 ${item}</span>
+            <button class="del-sm" data-del-grocery="${i}" type="button" aria-label="Remove">×</button>
+          </div>`).join('')}
       </div>
+      <form class="add-item-form" id="add-grocery-form">
+        <input name="item" placeholder="Add grocery item..." required>
+        <button type="submit" class="add-item-submit">Add</button>
+      </form>
     </div>`;
 }
 
@@ -247,13 +296,28 @@ function renderCalendar() {
             const isToday = iso === todayISO;
             const evts = state.events.filter(e => e.date === iso);
             return `
-              <div class="cal-cell${inMonth ? '' : ' out'}${isToday ? ' today' : ''}">
+              <div class="cal-cell${inMonth ? '' : ' out'}${isToday ? ' today' : ''}" data-cal-date="${iso}">
                 <span class="cal-num">${day.getDate()}</span>
-                ${evts.map(e => `<div class="cal-evt">${e.title}</div>`).join('')}
+                ${evts.map(e => `
+                  <div class="cal-evt">
+                    ${e.title}
+                    <button class="cal-evt-del" data-del-event="${state.events.indexOf(e)}" type="button" aria-label="Remove">×</button>
+                  </div>`).join('')}
               </div>`;
           }).join('')}
         </div>
       </div>
+      <dialog class="event-dialog" id="cal-dialog">
+        <form class="dialog-card" id="cal-form">
+          <button class="close-btn" type="button" id="cal-close">×</button>
+          <p class="eyebrow">New Event</p>
+          <label>Title <input required name="title" placeholder="Dentist appointment"></label>
+          <label>Date <input required name="date" type="date" id="cal-date-input"></label>
+          <label>Time <input name="time" placeholder="3:30 PM"></label>
+          <label>Person <input name="person" placeholder="Family"></label>
+          <button class="primary-btn full" type="submit">Save Event</button>
+        </form>
+      </dialog>
     </div>`;
 }
 
@@ -265,11 +329,32 @@ function renderLists() {
         <h1 class="tasks-date">Lists</h1>
         <div class="tasks-nav"></div>
       </header>
-      <div class="lists-placeholder">
-        <div class="placeholder-card">📋 School supplies</div>
-        <div class="placeholder-card">🎁 Birthday wish list</div>
-        <div class="placeholder-card">🏕️ Camping packing list</div>
+      <div class="lists-wrap">
+        ${state.lists.map(list => `
+          <div class="list-card">
+            <h3 class="list-card-title">${list.name}</h3>
+            <div class="list-items">
+              ${list.items.map((item, i) => `
+                <div class="list-item-row">
+                  <span>${item}</span>
+                  <button class="del-sm" data-del-list-item="${list.id}" data-item-idx="${i}" type="button" aria-label="Remove">×</button>
+                </div>`).join('')}
+            </div>
+            <form class="add-item-form" data-add-list="${list.id}">
+              <input name="item" placeholder="Add item..." required>
+              <button type="submit" class="add-item-submit">Add</button>
+            </form>
+          </div>`).join('')}
       </div>
+      <button class="add-list-btn" id="add-list-btn" type="button">+ New List</button>
+      <dialog class="event-dialog" id="new-list-dialog">
+        <form class="dialog-card" id="new-list-form">
+          <button class="close-btn" type="button" id="new-list-close">×</button>
+          <p class="eyebrow">New List</p>
+          <label>List name <input required name="name" placeholder="Vacation packing"></label>
+          <button class="primary-btn full" type="submit">Create List</button>
+        </form>
+      </dialog>
     </div>`;
 }
 
@@ -414,7 +499,104 @@ function bind() {
     render();
   });
 
-  const txnDialog = document.querySelector('#txn-dialog');
+  // ── Tasks ──────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-del-task]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      state.tasks = state.tasks.filter(t => t.id !== Number(btn.dataset.delTask));
+      render();
+    }));
+  const taskDialog = document.querySelector('#task-dialog');
+  document.querySelector('#open-task-dialog')?.addEventListener('click', () => taskDialog.showModal());
+  document.querySelector('#task-close')?.addEventListener('click', () => taskDialog.close());
+  document.querySelector('#task-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    state.tasks.push({
+      id: state.nextTaskId++,
+      person: data.get('person'),
+      timeOfDay: data.get('timeOfDay'),
+      emoji: data.get('emoji') || '📌',
+      title: data.get('title'),
+      done: false,
+    });
+    taskDialog.close();
+    render();
+  });
+
+  // ── Meals ──────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-edit-meal]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.editingMealIdx = Number(btn.dataset.editMeal);
+      render();
+    }));
+  document.querySelectorAll('.meal-edit-form').forEach(form =>
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const data = new FormData(e.currentTarget);
+      state.meals[Number(form.dataset.mealIdx)].meal = data.get('meal');
+      state.editingMealIdx = null;
+      render();
+    }));
+
+  // ── Groceries ────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-del-grocery]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.groceries.splice(Number(btn.dataset.delGrocery), 1);
+      render();
+    }));
+  document.querySelector('#add-grocery-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const item = new FormData(e.currentTarget).get('item').trim();
+    if (item) { state.groceries.push(item); render(); }
+  });
+
+  // ── Lists ─────────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-del-list-item]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const list = state.lists.find(l => l.id === Number(btn.dataset.delListItem));
+      if (list) { list.items.splice(Number(btn.dataset.itemIdx), 1); render(); }
+    }));
+  document.querySelectorAll('[data-add-list]').forEach(form =>
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const list = state.lists.find(l => l.id === Number(form.dataset.addList));
+      const item = new FormData(e.currentTarget).get('item').trim();
+      if (list && item) { list.items.push(item); render(); }
+    }));
+  const newListDialog = document.querySelector('#new-list-dialog');
+  document.querySelector('#add-list-btn')?.addEventListener('click', () => newListDialog.showModal());
+  document.querySelector('#new-list-close')?.addEventListener('click', () => newListDialog.close());
+  document.querySelector('#new-list-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = new FormData(e.currentTarget).get('name').trim();
+    if (name) { state.lists.push({ id: state.nextListId++, name, items: [] }); newListDialog.close(); render(); }
+  });
+
+  // ── Calendar ─────────────────────────────────────────────────────────────
+  const calDialog = document.querySelector('#cal-dialog');
+  document.querySelectorAll('[data-cal-date]').forEach(cell =>
+    cell.addEventListener('click', e => {
+      if (e.target.closest('[data-del-event]')) return;
+      const dateInput = document.querySelector('#cal-date-input');
+      if (dateInput) dateInput.value = cell.dataset.calDate;
+      calDialog.showModal();
+    }));
+  document.querySelector('#cal-close')?.addEventListener('click', () => calDialog.close());
+  document.querySelector('#cal-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    state.events.push({ title: data.get('title'), date: data.get('date'), time: data.get('time') || 'Anytime', person: data.get('person') || 'Family' });
+    calDialog.close();
+    render();
+  });
+  document.querySelectorAll('[data-del-event]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      state.events.splice(Number(btn.dataset.delEvent), 1);
+      render();
+    }));
+}
   document.querySelector('#add-txn-btn')?.addEventListener('click', () => txnDialog.showModal());
   document.querySelector('#txn-close')?.addEventListener('click', () => txnDialog.close());
   document.querySelector('#txn-form')?.addEventListener('submit', e => {

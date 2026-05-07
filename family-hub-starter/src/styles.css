@@ -96,6 +96,7 @@ h1, h2, h3, h4 { line-height: 1.1; }
 .nv-tan    { background: var(--nv-tan);    }
 .nv-yellow { background: var(--nv-yellow); }
 .nv-blue   { background: var(--nv-blue);   }
+.nv-mint   { background: var(--nv-mint);   }
 .nv-gray   { background: var(--nv-gray);   }
 
 .nav-label {
@@ -520,9 +521,10 @@ h1, h2, h3, h4 { line-height: 1.1; }
   gap: 4px;
 }
 .cal-cell {
-  min-height: 64px;
+  min-height: 96px;
   border-radius: 12px;
-  padding: 7px 6px 5px;
+  padding: 8px 7px 6px;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -530,28 +532,91 @@ h1, h2, h3, h4 { line-height: 1.1; }
 }
 .cal-cell.out { opacity: 0.32; }
 .cal-cell.today { outline: 2px solid var(--blue-acc); background: var(--blue-bg); }
-.cal-num { font-size: 0.82rem; font-weight: 800; }
+.cal-cell:hover:not(.out) { background: #f0eaf8; }
+.cal-num { font-size: 0.88rem; font-weight: 800; }
 .cal-evt {
-  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.62rem;
   font-weight: 700;
   background: var(--lavender-bg);
   color: var(--lavender-acc);
   border-radius: 6px;
   padding: 2px 5px;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+.cal-evt-del {
+  flex-shrink: 0;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: rgba(155,110,212,0.18); color: var(--lavender-acc);
+  font-size: 0.65rem; font-weight: 900;
+  display: grid; place-items: center; margin-left: auto;
+}
+.cal-evt-del:hover { background: #fde8e8; color: #e05c5c; }
+
+/* ── Edit/Delete UI ─────────────────────────────────────────────────────────── */
+.task-actions { display: flex; align-items: center; gap: 6px; }
+.del-sm {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(0,0,0,0.07); color: var(--muted);
+  font-size: 1rem; font-weight: 900;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.del-sm:hover { background: #fde8e8; color: #e05c5c; }
+.edit-icon-btn {
+  margin-left: auto; padding: 4px 10px; border-radius: 10px;
+  font-size: 0.9rem; background: rgba(0,0,0,0.05); color: var(--muted);
+}
+
+/* ── Add-item form ───────────────────────────────────────────────────────────── */
+.add-item-form {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+.add-item-form input {
+  flex: 1; border: 2px solid var(--border); border-radius: 14px;
+  padding: 11px 14px; font: inherit; outline: none; background: var(--white);
+}
+.add-item-form input:focus { border-color: var(--lavender-acc); }
+.add-item-submit {
+  padding: 11px 18px; border-radius: 14px;
+  background: var(--lavender-acc); color: #fff;
+  font-weight: 800; font-size: 0.9rem; white-space: nowrap;
+}
+
+/* ── Grocery item list ───────────────────────────────────────────────────────── */
+.item-list { display: grid; gap: 8px; margin-bottom: 4px; }
+.item-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--white); border-radius: 16px; padding: 14px 16px;
+  font-weight: 700; font-size: 0.95rem;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+
+/* ── Meal inline edit ────────────────────────────────────────────────────────── */
+.meal-edit-form { display: flex; gap: 8px; flex: 1; }
+.meal-edit-input {
+  flex: 1; border: 2px solid var(--lavender-acc); border-radius: 12px;
+  padding: 8px 12px; font: inherit; font-weight: 700; outline: none;
 }
 
 /* ── Lists ───────────────────────────────────────────────────────────────────── */
-.lists-placeholder { display: grid; gap: 12px; }
-.placeholder-card {
-  background: var(--white);
-  border-radius: 18px;
-  padding: 20px;
-  font-size: 1rem;
-  font-weight: 700;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+.lists-wrap { display: grid; gap: 16px; margin-bottom: 16px; }
+.list-card {
+  background: var(--white); border-radius: 20px; padding: 18px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+}
+.list-card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 12px; }
+.list-items { display: grid; gap: 6px; margin-bottom: 8px; }
+.list-item-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-radius: 12px; background: var(--bg);
+  font-weight: 700; font-size: 0.9rem;
+}
+.add-list-btn {
+  width: 100%; padding: 16px; border-radius: 18px;
+  background: var(--nv-yellow); font-size: 1rem; font-weight: 800; color: #7a5c00;
+  margin-bottom: 20px;
 }
 
 /* ── Profiles ────────────────────────────────────────────────────────────────── */
