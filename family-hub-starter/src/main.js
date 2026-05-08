@@ -713,6 +713,7 @@ function assignRecipeToDay(recipeId, dayIdx) {
 
 function render() {
   saveState();
+  if (typeof scheduleNotifs === 'function') scheduleNotifs();
   const app = document.querySelector('#app');
   switch (state.view) {
     case 'tasks':     app.innerHTML = renderTasks();     break;
@@ -1171,7 +1172,71 @@ function bind() {
   });
 }
 
+// ── notifications ─────────────────────────────────────────────────────────────
+
+const scheduledNotifIds = [];
+
+function clearScheduledNotifs() {
+  while (scheduledNotifIds.length) clearTimeout(scheduledNotifIds.pop());
+}
+
+function scheduleNotifs() {
+  if (Notification.permission !== 'granted') return;
+  clearScheduledNotifs();
+  const now = new Date();
+  const todayStr2 = now.toISOString().slice(0, 10);
+
+  // Calendar events — fire 5 min before their time
+  state.events
+    .filter(e => e.date === todayStr2 && e.time)
+    .forEach(e => {
+      const [rawTime, ampm] = [e.time.slice(0, -3), e.time.slice(-2)];
+      let [h, m] = rawTime.split(':').map(Number);
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      const fireAt = new Date(now);
+      fireAt.setHours(h, m - 5, 0, 0);
+      const ms = fireAt - now;
+      if (ms > 0) {
+        scheduledNotifIds.push(setTimeout(() => {
+          new Notification('📅 Upcoming: ' + e.title, {
+            body: `${e.time}${e.person ? ' · ' + e.person : ''}`,
+            icon: '/icons/icon-192.png',
+          });
+        }, ms));
+      }
+    });
+
+  // Tasks — fire at morning 8am, afternoon 12pm, evening 6pm
+  const timeFire = { morning: [8, 0], afternoon: [12, 0], evening: [18, 0] };
+  ['morning', 'afternoon', 'evening'].forEach(period => {
+    const pending = state.tasks.filter(t => t.timeOfDay === period && !t.done);
+    if (!pending.length) return;
+    const [h, m] = timeFire[period];
+    const fireAt = new Date(now);
+    fireAt.setHours(h, m, 0, 0);
+    const ms = fireAt - now;
+    if (ms > 0) {
+      scheduledNotifIds.push(setTimeout(() => {
+        new Notification(`${TIME_ICONS[period]} ${TIME_LABELS[period]} tasks`, {
+          body: pending.map(t => t.emoji + ' ' + t.title).join('\n'),
+          icon: '/icons/icon-192.png',
+        });
+      }, ms));
+    }
+  });
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+  scheduleNotifs();
+}
+
 // ── boot ──────────────────────────────────────────────────────────────────────
 
 render(); // render immediately with default state
-loadState().then(() => render()).catch(() => render()); // re-render once Firebase data loads
+loadState().then(() => { render(); scheduleNotifs(); }).catch(() => render());
+requestNotifPermission();
