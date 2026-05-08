@@ -4,13 +4,13 @@ import { getDatabase, ref, get, set } from 'firebase/database';
 // ── Replace this object with your own config from Firebase console ──────────
 // Project Settings → Your apps → SDK setup and configuration → Config
 const firebaseConfig = {
-  apiKey:            'REPLACE_ME',
-  authDomain:        'REPLACE_ME',
-  databaseURL:       'REPLACE_ME',
-  projectId:         'REPLACE_ME',
-  storageBucket:     'REPLACE_ME',
-  messagingSenderId: 'REPLACE_ME',
-  appId:             'REPLACE_ME',
+  apiKey:            'AIzaSyAIsM3NTYWJGjBGf3KaEhrsliJFrl9a5xo',
+  authDomain:        'family-hub-67b12.firebaseapp.com',
+  databaseURL:       'https://family-hub-67b12-default-rtdb.firebaseio.com',
+  projectId:         'family-hub-67b12',
+  storageBucket:     'family-hub-67b12.firebasestorage.app',
+  messagingSenderId: '684989037934',
+  appId:             '1:684989037934:web:c3ba7fcb6d25387301957f',
 };
 // ───────────────────────────────────────────────────────────────────────────
 
