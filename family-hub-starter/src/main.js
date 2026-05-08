@@ -663,7 +663,10 @@ function renderProfiles() {
 
 // ── persistence ───────────────────────────────────────────────────────────────
 
+let firebaseReady = false;
+
 function saveState() {
+  if (!firebaseReady) return;
   const s = { ...state, currentDate: state.currentDate.toISOString() };
   delete s.editingMealIdx;
   delete s.selectedRecipeId;
@@ -673,13 +676,16 @@ function saveState() {
 async function loadState() {
   try {
     const snapshot = await get(stateRef);
-    if (!snapshot.exists()) return;
+    if (!snapshot.exists()) { firebaseReady = true; return; }
     const saved = snapshot.val();
     Object.assign(state, saved);
     state.currentDate = saved.currentDate ? new Date(saved.currentDate) : new Date();
     state.editingMealIdx = null;
     state.selectedRecipeId = null;
-  } catch {}
+    firebaseReady = true;
+  } catch {
+    firebaseReady = true;
+  }
 }
 
 // ── assign recipe helper ──────────────────────────────────────────────────────
@@ -1167,4 +1173,5 @@ function bind() {
 
 // ── boot ──────────────────────────────────────────────────────────────────────
 
-loadState().then(() => render());
+render(); // render immediately with default state
+loadState().then(() => render()).catch(() => render()); // re-render once Firebase data loads
