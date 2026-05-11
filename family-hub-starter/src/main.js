@@ -15,6 +15,9 @@ const NAV_ITEMS = [
   { label: 'Lists',     icon: '📋', view: 'lists',     cls: 'nv-yellow' },
   { label: 'Groceries', icon: '🛒', view: 'groceries', cls: 'nv-blue'   },
   { label: 'Budget',    icon: '💰', view: 'budget',    cls: 'nv-mint'   },
+  { label: 'Chores',    icon: '🧹', view: 'chores',    cls: 'nv-orange' },
+  { label: 'Rewards',   icon: '⭐', view: 'rewards',   cls: 'nv-purple' },
+  { label: 'Routines',  icon: '🔁', view: 'routines',  cls: 'nv-teal'   },
   { label: 'Profiles',  icon: '👥', view: 'profiles',  cls: 'nv-gray'   },
 ];
 
@@ -39,6 +42,10 @@ const state = {
   nextNotifId: 1,
   nextRecipeId: 1,
   nextEventId: 1,
+  nextChoreId: 1,
+  nextRewardId: 1,
+  nextRoutineId: 1,
+  nextBillId: 1,
   editingMealIdx: null,
   selectedRecipeId: null,
   recipes: [],
@@ -49,6 +56,10 @@ const state = {
     categories: [],
     transactions: [],
   },
+  chores: [],
+  rewards: [],
+  routines: [],
+  bills: [],
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -64,8 +75,24 @@ function fmtLong(date) {
 // ── views ─────────────────────────────────────────────────────────────────────
 
 function renderHome() {
-  const todayEvents = state.events.filter(e => e.date === todayStr());
+  const today = todayStr();
+  const in7 = new Date(); in7.setDate(in7.getDate() + 7);
+  const in7str = in7.toISOString().slice(0, 10);
+
+  // Upcoming events — today + next 7 days, sorted by date+time
+  const upcomingEvents = state.events
+    .filter(e => e.date >= today && e.date <= in7str)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.time || '').localeCompare(b.time || ''));
+
+  // Upcoming bills — unpaid, due within 14 days
+  const in14 = new Date(); in14.setDate(in14.getDate() + 14);
+  const in14str = in14.toISOString().slice(0, 10);
+  const upcomingBills = state.bills
+    .filter(b => !b.paid && b.dueDate <= in14str)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
   const unread = state.notifications.filter(n => !n.read).length;
+
   return `
     <div class="page home-page">
       <header class="app-header">
@@ -87,16 +114,42 @@ function renderHome() {
 
       <div class="today-card">
         <h2 class="today-date">${fmtLong(new Date())}</h2>
-        ${todayEvents.length === 0
-          ? '<p class="no-events">No upcoming events today 😌</p>'
-          : `<ul class="event-list">${todayEvents.map(e => `
-              <li class="event-row">
-                <span class="event-dot"></span>
-                <span class="event-time">${e.time}</span>
-                <span class="event-title">${e.title}</span>
-                <span class="event-person">${e.person}</span>
-              </li>`).join('')}</ul>`}
+        ${upcomingEvents.length === 0
+          ? '<p class="no-events">No upcoming events this week 😌</p>'
+          : `<ul class="event-list">
+              ${upcomingEvents.map(e => {
+                const isToday = e.date === today;
+                const dateLabel = isToday ? 'Today' : new Date(e.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                return `
+                <li class="event-row">
+                  <span class="event-dot"></span>
+                  <span class="event-time">${dateLabel}${e.time && e.time !== 'Anytime' ? ' · ' + e.time : ''}</span>
+                  <span class="event-title">${e.title}</span>
+                  <span class="event-person">${e.person || ''}</span>
+                </li>`;
+              }).join('')}
+            </ul>`}
       </div>
+
+      ${upcomingBills.length > 0 ? `
+      <div class="today-card" style="margin-top:14px">
+        <h2 class="today-date" style="font-size:1.1rem;margin-bottom:10px">💳 Upcoming Bills</h2>
+        <ul class="event-list">
+          ${upcomingBills.map(b => {
+            const daysUntil = Math.ceil((new Date(b.dueDate) - new Date(today)) / 86400000);
+            const overdue  = daysUntil < 0;
+            const label    = overdue ? `${Math.abs(daysUntil)}d overdue` : daysUntil === 0 ? 'Due today' : `Due in ${daysUntil}d`;
+            const color    = overdue ? '#e05c5c' : daysUntil <= 3 ? '#e07830' : 'var(--muted)';
+            return `
+            <li class="event-row">
+              <span style="font-size:1.1rem">${b.emoji || '📄'}</span>
+              <span class="event-title">${b.name}</span>
+              <span style="margin-left:auto;font-weight:800;font-size:0.85rem;color:${color}">${label}</span>
+              <span style="font-weight:800;font-size:0.92rem">$${Number(b.amount).toFixed(2)}</span>
+            </li>`;
+          }).join('')}
+        </ul>
+      </div>` : ''}
     </div>`;
 }
 
@@ -105,7 +158,10 @@ function renderTaskCard(task) {
     <div class="task-card${task.done ? ' done' : ''}">
       <div class="task-emoji-area"><span class="task-emoji">${task.emoji}</span></div>
       <div class="task-footer">
-        <span class="task-title">${task.title}</span>
+        <div style="flex:1;min-width:0">
+          <span class="task-title">${task.title}</span>
+          ${task.reminderTime ? `<div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-top:2px">🔔 ${task.reminderTime}</div>` : ''}
+        </div>
         <div class="task-actions">
           <button class="task-toggle${task.done ? ' checked' : ''}"
                   data-task-toggle="${task.id}" type="button"
@@ -174,7 +230,9 @@ function renderTasks() {
           <p class="eyebrow">New Task</p>
           <label>Person
             <select name="person">
-              ${state.profiles.map(p => `<option>${p.name}</option>`).join('')}
+              ${state.profiles.length === 0
+                ? '<option value="Family">Family</option>'
+                : state.profiles.map(p => `<option>${p.name}</option>`).join('')}
             </select>
           </label>
           <label>Time of Day
@@ -186,6 +244,13 @@ function renderTasks() {
           </label>
           <label>Emoji <input name="emoji" placeholder="📌" maxlength="2" value="📌"></label>
           <label>Task <input required name="title" placeholder="Pack school bag"></label>
+          <label style="flex-direction:row;align-items:center;gap:10px;font-size:0.9rem">
+            <input type="checkbox" name="reminder" value="1" checked style="width:18px;height:18px;accent-color:var(--lavender-acc)">
+            <span>🔔 Enable reminder</span>
+          </label>
+          <label>Reminder time <small style="font-weight:500;color:var(--muted)">(optional — leave blank to use time-of-day)</small>
+            <input name="reminderTime" type="time">
+          </label>
           <button class="primary-btn full" type="submit">Save Task</button>
         </form>
       </dialog>
@@ -443,7 +508,7 @@ function renderBudget() {
       <div class="budget-summary">
         <div class="budget-total">
           <p class="budget-label">Month so far</p>
-          <p class="budget-amount">$${totalSpent.toFixed(2)} <span>/ $${totalBudgeted}</span></p>
+          <p class="budget-amount">$${totalSpent.toFixed(2)} <span>/ $${totalBudgeted.toFixed(2)}</span></p>
           <div class="budget-bar-wrap">
             <div class="budget-bar-fill" style="width:${overallPct}%"></div>
           </div>
@@ -499,7 +564,53 @@ function renderBudget() {
 
       <button class="add-txn-btn" id="add-txn-btn" type="button">+ Add Transaction</button>
 
-      <dialog class="event-dialog" id="edit-monthly-dialog">
+      <h3 class="section-label">Bills</h3>
+      <div class="bills-list">
+        ${state.bills.length === 0
+          ? `<p style="color:var(--muted);text-align:center;padding:16px 0 8px">No bills added yet 📬</p>`
+          : state.bills.slice().sort((a,b) => a.dueDate.localeCompare(b.dueDate)).map((b, i) => {
+              const daysUntil = Math.ceil((new Date(b.dueDate) - new Date(todayStr())) / 86400000);
+              const overdue   = daysUntil < 0;
+              const dueSoon   = daysUntil >= 0 && daysUntil <= 3;
+              const statusCls = b.paid ? 'bill-paid' : overdue ? 'bill-overdue' : dueSoon ? 'bill-soon' : '';
+              const statusLabel = b.paid ? '✓ Paid' : overdue ? `${Math.abs(daysUntil)}d overdue` : daysUntil === 0 ? 'Due today' : `Due in ${daysUntil}d`;
+              return `
+              <div class="bill-row ${statusCls}">
+                <div class="bill-icon">${b.emoji || '📄'}</div>
+                <div class="bill-info">
+                  <div class="bill-title">${b.name}</div>
+                  <div class="bill-meta">${b.dueDate}${b.autopay ? ' · 🔄 Autopay' : ''}${b.reminder ? ' · 🔔' : ''}</div>
+                </div>
+                <div class="bill-right">
+                  <span class="bill-amt">$${Number(b.amount).toFixed(2)}</span>
+                  <span class="bill-status-badge ${statusCls}">${statusLabel}</span>
+                  <button class="bill-paid-btn${b.paid ? ' paid' : ''}" data-toggle-bill="${i}" type="button" title="${b.paid ? 'Mark unpaid' : 'Mark paid'}">${b.paid ? '✓' : '○'}</button>
+                  <button class="del-sm" data-del-bill="${i}" type="button" aria-label="Delete">×</button>
+                </div>
+              </div>`;
+            }).join('')}
+      </div>
+      <button class="add-txn-btn" id="add-bill-btn" type="button" style="background:var(--nv-red);color:#7a0000">+ Add Bill</button>
+
+      <dialog class="event-dialog" id="bill-dialog">
+        <form class="dialog-card" id="bill-form">
+          <button class="close-btn" type="button" id="bill-close">×</button>
+          <p class="eyebrow">New Bill</p>
+          <label>Name <input required name="name" placeholder="Electric bill"></label>
+          <label>Emoji <input name="emoji" maxlength="2" placeholder="💡" value="📄"></label>
+          <label>Amount ($) <input required name="amount" type="number" step="0.01" min="0" placeholder="120.00"></label>
+          <label>Due date <input required name="dueDate" type="date"></label>
+          <label style="flex-direction:row;align-items:center;gap:10px;font-size:0.9rem">
+            <input type="checkbox" name="autopay" value="1" style="width:18px;height:18px;accent-color:var(--lavender-acc)">
+            <span>🔄 Autopay</span>
+          </label>
+          <label style="flex-direction:row;align-items:center;gap:10px;font-size:0.9rem">
+            <input type="checkbox" name="reminder" value="1" checked style="width:18px;height:18px;accent-color:var(--lavender-acc)">
+            <span>🔔 Remind me 3 days before due</span>
+          </label>
+          <button class="primary-btn full" type="submit">Save Bill</button>
+        </form>
+      </dialog>
         <form class="dialog-card" id="edit-monthly-form">
           <button class="close-btn" type="button" id="edit-monthly-close">×</button>
           <p class="eyebrow">Monthly Income</p>
@@ -620,6 +731,270 @@ function renderNotifications() {
     </div>`;
 }
 
+// ── helpers for chores/routines ──────────────────────────────────────────────
+
+const ALL_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function todayDayShort() {
+  return ALL_DAYS[new Date().getDay()];
+}
+
+function isDueToday(item) {
+  const d = todayDayShort();
+  if (!item.days || item.days.length === 0) return true;
+  return item.days.includes(d);
+}
+
+function isCompletedToday(item) {
+  return Array.isArray(item.completedDates) && item.completedDates.includes(todayStr());
+}
+
+function dayLabel(days) {
+  if (!days || days.length === 7) return 'Daily';
+  if (days.length === 5 && !days.includes('Sat') && !days.includes('Sun')) return 'Weekdays';
+  if (days.length === 2 && days.includes('Sat') && days.includes('Sun')) return 'Weekends';
+  return days.join(', ');
+}
+
+function dayPickerHtml(name, selected = ALL_DAYS) {
+  return `<div class="days-picker">${ALL_DAYS.map(d => `
+    <label>
+      <input type="checkbox" name="${name}" value="${d}"${selected.includes(d) ? ' checked' : ''}>
+      <span>${d}</span>
+    </label>`).join('')}</div>`;
+}
+
+// ── Chores ────────────────────────────────────────────────────────────────────
+
+function renderChores() {
+  const today = todayStr();
+  const kids = state.profiles.filter(p => p.type === 'child');
+  const all  = state.profiles;
+
+  // group chores due today by assignee
+  const dueToday = state.chores.filter(c => isDueToday(c));
+
+  const byPerson = all.reduce((acc, p) => { acc[p.name] = []; return acc; }, {});
+  byPerson['Unassigned'] = [];
+  dueToday.forEach(c => {
+    if (byPerson[c.assignedTo] !== undefined) byPerson[c.assignedTo].push(c);
+    else byPerson['Unassigned'].push(c);
+  });
+
+  const sections = Object.entries(byPerson)
+    .filter(([, list]) => list.length > 0)
+    .map(([person, list]) => {
+      const profile = all.find(p => p.name === person);
+      const earnedPts = list.filter(c => isCompletedToday(c)).reduce((s, c) => s + (c.points || 0), 0);
+      const totalPts  = list.reduce((s, c) => s + (c.points || 0), 0);
+      return `
+        <div class="chores-section">
+          <div class="chores-section-title">
+            ${profile ? `<span>${profile.emoji}</span>` : ''}
+            <span>${person}</span>
+            <span class="points-pill">⭐ ${earnedPts} / ${totalPts} pts</span>
+          </div>
+          ${list.map(c => {
+            const done = isCompletedToday(c);
+            return `
+            <div class="chore-row${done ? ' chore-done' : ''}">
+              <span class="chore-emoji">${c.emoji || '🧹'}</span>
+              <div class="chore-info">
+                <div class="chore-title">${c.title}</div>
+                <div class="chore-meta">${dayLabel(c.days)}</div>
+              </div>
+              ${c.points ? `<span class="chore-pts">+${c.points}⭐</span>` : ''}
+              <button class="chore-complete-btn${done ? ' done' : ''}" data-complete-chore="${c.id}" type="button" aria-label="${done ? 'Undo' : 'Complete'}">
+                ${done ? '✓' : ''}
+              </button>
+              <button class="del-sm" data-del-chore="${c.id}" type="button" aria-label="Delete">×</button>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }).join('');
+
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Chores</h1>
+        <div class="tasks-nav"></div>
+      </header>
+      ${state.chores.length === 0 && kids.length === 0
+        ? `<p style="color:var(--muted);text-align:center;padding:48px 0">Add child profiles first, then create chores 🧹</p>`
+        : sections || `<p style="color:var(--muted);text-align:center;padding:48px 0">No chores due today 🎉</p>`}
+
+      <button class="add-txn-btn" id="add-chore-btn" type="button" style="background:var(--nv-orange);color:#7a3800">+ Add Chore</button>
+
+      <dialog class="event-dialog" id="chore-dialog">
+        <form class="dialog-card" id="chore-form">
+          <button class="close-btn" type="button" id="chore-close">×</button>
+          <p class="eyebrow">New Chore</p>
+          <label>Title <input required name="title" placeholder="Clean room"></label>
+          <label>Emoji <input name="emoji" placeholder="🧹" maxlength="2" value="🧹"></label>
+          <label>Assign to
+            <select name="assignedTo">
+              ${state.profiles.map(p => `<option value="${p.name}">${p.emoji} ${p.name}${p.type === 'child' ? ' 👶' : ''}</option>`).join('')}
+            </select>
+          </label>
+          <label>Points reward <input name="points" type="number" min="0" max="999" placeholder="10" value="10"></label>
+          <label>Days due</label>
+          ${dayPickerHtml('days')}
+          <button class="primary-btn full" type="submit">Save Chore</button>
+        </form>
+      </dialog>
+    </div>`;
+}
+
+// ── Rewards ───────────────────────────────────────────────────────────────────
+
+function renderRewards() {
+  const kids = state.profiles.filter(p => p.type === 'child');
+
+  const balanceCards = kids.map(p => `
+    <div class="rewards-balance-card ${p.color}">
+      <div class="rewards-balance-name">${p.emoji} ${p.name}</div>
+      <div class="rewards-balance-pts">${p.points || 0}</div>
+      <div class="rewards-balance-star">⭐ points</div>
+    </div>`).join('');
+
+  const rewardCards = state.rewards.map((r, ri) => {
+    const redeemOptions = kids.map(k =>
+      `<button class="redeem-btn" data-redeem-reward="${ri}" data-redeem-for="${k.name}" type="button"${(k.points || 0) < r.cost ? ' disabled' : ''}>${k.name}</button>`
+    ).join('');
+    return `
+      <div class="reward-card">
+        <div class="reward-emoji">${r.emoji || '🎁'}</div>
+        <div class="reward-info">
+          <div class="reward-title">${r.title}</div>
+          <div class="reward-cost">⭐ ${r.cost} points</div>
+        </div>
+        <div class="reward-redeem-row">
+          ${kids.length ? redeemOptions : '<span style="font-size:0.75rem;color:var(--muted)">No kids</span>'}
+          <button class="del-sm" data-del-reward="${ri}" type="button" aria-label="Delete">×</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Rewards</h1>
+        <div class="tasks-nav"></div>
+      </header>
+
+      ${kids.length > 0 ? `
+        <h3 class="section-label">Points Balance</h3>
+        <div class="rewards-balance-grid">${balanceCards}</div>` : ''}
+
+      <h3 class="section-label">Reward Store</h3>
+      ${state.rewards.length === 0
+        ? `<p style="color:var(--muted);text-align:center;padding:32px 0">No rewards yet — add some! ⭐</p>`
+        : rewardCards}
+
+      <button class="add-txn-btn" id="add-reward-btn" type="button" style="background:var(--nv-purple);color:#5c00aa">+ Add Reward</button>
+
+      <dialog class="event-dialog" id="reward-dialog">
+        <form class="dialog-card" id="reward-form">
+          <button class="close-btn" type="button" id="reward-close">×</button>
+          <p class="eyebrow">New Reward</p>
+          <label>Title <input required name="title" placeholder="Movie night"></label>
+          <label>Emoji <input name="emoji" placeholder="🎁" maxlength="2" value="🎁"></label>
+          <label>Point cost <input required name="cost" type="number" min="1" placeholder="50"></label>
+          <button class="primary-btn full" type="submit">Save Reward</button>
+        </form>
+      </dialog>
+    </div>`;
+}
+
+// ── Routines ──────────────────────────────────────────────────────────────────
+
+function renderRoutines() {
+  const today = todayStr();
+  const dueToday = state.routines.filter(r => isDueToday(r));
+
+  const byPerson = {};
+  state.profiles.forEach(p => { byPerson[p.name] = []; });
+  byPerson['Everyone'] = [];
+  dueToday.forEach(r => {
+    if (r.assignedTo === 'Everyone' || !r.assignedTo) byPerson['Everyone'].push(r);
+    else if (byPerson[r.assignedTo] !== undefined) byPerson[r.assignedTo].push(r);
+    else byPerson['Everyone'].push(r);
+  });
+
+  const sections = Object.entries(byPerson)
+    .filter(([, list]) => list.length > 0)
+    .map(([person, list]) => {
+      const profile = state.profiles.find(p => p.name === person);
+      return `
+        <div class="routines-section">
+          <h3 class="section-label">${profile ? profile.emoji + ' ' : ''}${person}</h3>
+          ${list.map(r => {
+            const done = isCompletedToday(r);
+            return `
+            <div class="routine-row${done ? ' routine-done' : ''}">
+              <span class="routine-emoji">${r.emoji || '🔁'}</span>
+              <div class="routine-info">
+                <div class="routine-title">${r.title}</div>
+                <div class="routine-meta">${dayLabel(r.days)} · ${r.reminderTime ? r.reminderTime : (TIME_LABELS[r.timeOfDay] || r.timeOfDay || 'Any time')}${r.reminder ? ' 🔔' : ''}</div>
+              </div>
+              <button class="chore-complete-btn${done ? ' done' : ''}" data-complete-routine="${r.id}" type="button" aria-label="${done ? 'Undo' : 'Done'}">
+                ${done ? '✓' : ''}
+              </button>
+              <button class="del-sm" data-del-routine="${r.id}" type="button" aria-label="Delete">×</button>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }).join('');
+
+  return `
+    <div class="page">
+      <header class="tasks-header">
+        <button class="back-btn" type="button" data-nav="home">←</button>
+        <h1 class="tasks-date">Routines</h1>
+        <div class="tasks-nav"></div>
+      </header>
+      ${dueToday.length === 0
+        ? `<p style="color:var(--muted);text-align:center;padding:48px 0">No routines due today 🎉</p>`
+        : sections}
+
+      <button class="add-txn-btn" id="add-routine-btn" type="button" style="background:var(--nv-teal);color:#0a5a4e">+ Add Routine</button>
+
+      <dialog class="event-dialog" id="routine-dialog">
+        <form class="dialog-card" id="routine-form">
+          <button class="close-btn" type="button" id="routine-close">×</button>
+          <p class="eyebrow">New Routine</p>
+          <label>Title <input required name="title" placeholder="Brush teeth"></label>
+          <label>Emoji <input name="emoji" placeholder="🦷" maxlength="2" value="🔁"></label>
+          <label>Assign to
+            <select name="assignedTo">
+              <option value="Everyone">Everyone</option>
+              ${state.profiles.map(p => `<option value="${p.name}">${p.emoji} ${p.name}</option>`).join('')}
+            </select>
+          </label>
+          <label>Time of day
+            <select name="timeOfDay">
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+            </select>
+          </label>
+          <label>Days</label>
+          ${dayPickerHtml('days')}
+          <label style="flex-direction:row;align-items:center;gap:10px;font-size:0.9rem">
+            <input type="checkbox" name="reminder" value="1" style="width:18px;height:18px;accent-color:var(--lavender-acc)">
+            <span>🔔 Enable reminder</span>
+          </label>
+          <label>Specific reminder time <small style="font-weight:500;color:var(--muted)">(optional)</small>
+            <input name="reminderTime" type="time">
+          </label>
+          <button class="primary-btn full" type="submit">Save Routine</button>
+        </form>
+      </dialog>
+    </div>`;
+}
+
 function renderProfiles() {
   return `
     <div class="page">
@@ -634,6 +1009,8 @@ function renderProfiles() {
             <button class="del-sm profile-del" data-del-profile="${i}" type="button" aria-label="Remove">×</button>
             <div class="profile-avatar">${p.emoji}</div>
             <span class="profile-name">${p.name}</span>
+            <span class="profile-type-badge">${p.type === 'child' ? '👶 Child' : '🧑 Adult'}</span>
+            ${p.type === 'child' ? `<span class="profile-points">⭐ ${p.points || 0} pts</span>` : ''}
           </div>`).join('')}
       </div>
       <button class="add-list-btn" id="add-profile-btn" type="button" style="margin-top:16px">+ Add Person</button>
@@ -643,6 +1020,12 @@ function renderProfiles() {
           <p class="eyebrow">New Profile</p>
           <label>Name <input required name="name" placeholder="Sam"></label>
           <label>Emoji <input name="emoji" placeholder="🧑" maxlength="2" value="🧑"></label>
+          <label>Type
+            <select name="type">
+              <option value="adult">Adult</option>
+              <option value="child">Child</option>
+            </select>
+          </label>
           <label>Color
             <select name="color">
               <option value="lavender">Lavender</option>
@@ -682,6 +1065,32 @@ async function loadState() {
     state.currentDate = saved.currentDate ? new Date(saved.currentDate) : new Date();
     state.editingMealIdx = null;
     state.selectedRecipeId = null;
+    // Firebase drops empty arrays on save; normalize all collection fields back to arrays
+    const toArr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
+    state.tasks         = toArr(state.tasks);
+    state.events        = toArr(state.events);
+    state.groceries     = toArr(state.groceries).map(c => ({ ...c, items: toArr(c.items) }));
+    state.lists         = toArr(state.lists).map(l => ({ ...l, items: toArr(l.items) }));
+    state.profiles      = toArr(state.profiles).map(p => ({ type: 'adult', points: 0, ...p }));
+    state.notifications = toArr(state.notifications);
+    state.recipes       = toArr(state.recipes).map(r => ({ ...r, ingredients: toArr(r.ingredients) }));
+    state.chores        = toArr(state.chores).map(c => ({ ...c, days: toArr(c.days), completedDates: toArr(c.completedDates) }));
+    state.rewards       = toArr(state.rewards);
+    state.routines      = toArr(state.routines).map(r => ({ ...r, days: toArr(r.days), completedDates: toArr(r.completedDates) }));
+    state.bills         = toArr(state.bills);
+    const mealsArr = toArr(state.meals);
+    state.meals = mealsArr.length > 0 ? mealsArr : [
+      { day: 'Mon', meal: '' }, { day: 'Tue', meal: '' }, { day: 'Wed', meal: '' },
+      { day: 'Thu', meal: '' }, { day: 'Fri', meal: '' }, { day: 'Sat', meal: '' },
+      { day: 'Sun', meal: '' },
+    ];
+    if (!state.budget || typeof state.budget !== 'object') {
+      state.budget = { monthly: 0, categories: [], transactions: [] };
+    } else {
+      state.budget.monthly      = typeof state.budget.monthly === 'number' ? state.budget.monthly : 0;
+      state.budget.categories   = toArr(state.budget.categories);
+      state.budget.transactions = toArr(state.budget.transactions);
+    }
     firebaseReady = true;
   } catch {
     firebaseReady = true;
@@ -724,6 +1133,9 @@ function render() {
     case 'budget':    app.innerHTML = renderBudget();        break;
     case 'notifications': app.innerHTML = renderNotifications(); break;
     case 'profiles':  app.innerHTML = renderProfiles();     break;
+    case 'chores':    app.innerHTML = renderChores();     break;
+    case 'rewards':   app.innerHTML = renderRewards();    break;
+    case 'routines':  app.innerHTML = renderRoutines();   break;
     default:          app.innerHTML = renderHome();
   }
   bind();
@@ -778,6 +1190,8 @@ function bind() {
       emoji: data.get('emoji') || '📌',
       title: data.get('title'),
       done: false,
+      reminder: data.get('reminder') === '1',
+      reminderTime: data.get('reminderTime') || null,
     });
     taskDialog.close();
     e.currentTarget.reset();
@@ -1107,7 +1521,46 @@ function bind() {
     txnDialog?.close();
     e.currentTarget.reset();
     render();
-  });  // ── Notifications ─────────────────────────────────────────────────────────
+  });
+
+  // ── Bills ──────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-toggle-bill]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const b = state.bills[Number(btn.dataset.toggleBill)];
+      if (b) { b.paid = !b.paid; render(); }
+    }));
+  document.querySelectorAll('[data-del-bill]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.bills.splice(Number(btn.dataset.delBill), 1);
+      render();
+    }));
+  const billDialog = document.querySelector('#bill-dialog');
+  document.querySelector('#add-bill-btn')?.addEventListener('click', () => {
+    // default due date to today
+    const dd = document.querySelector('#bill-form [name=dueDate]');
+    if (dd && !dd.value) dd.value = todayStr();
+    billDialog?.showModal();
+  });
+  document.querySelector('#bill-close')?.addEventListener('click', () => billDialog?.close());
+  document.querySelector('#bill-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    state.bills.push({
+      id: state.nextBillId++,
+      name: data.get('name'),
+      emoji: data.get('emoji') || '📄',
+      amount: parseFloat(data.get('amount')),
+      dueDate: data.get('dueDate'),
+      autopay: data.get('autopay') === '1',
+      reminder: data.get('reminder') === '1',
+      paid: false,
+    });
+    billDialog?.close();
+    e.currentTarget.reset();
+    render();
+  });
+
+  // ── Notifications ─────────────────────────────────────────────────────────
   document.querySelector('#mark-all-read')?.addEventListener('click', () => {
     state.notifications.forEach(n => n.read = true); render();
   });
@@ -1165,8 +1618,135 @@ function bind() {
   document.querySelector('#profile-form')?.addEventListener('submit', e => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
-    state.profiles.push({ name: data.get('name'), emoji: data.get('emoji') || '🧑', color: data.get('color') });
+    state.profiles.push({
+      name: data.get('name'),
+      emoji: data.get('emoji') || '🧑',
+      color: data.get('color'),
+      type: data.get('type') || 'adult',
+      points: 0,
+    });
     profileDialog.close();
+    e.currentTarget.reset();
+    render();
+  });
+
+  // ── Chores ────────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-complete-chore]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const chore = state.chores.find(c => c.id === Number(btn.dataset.completeChore));
+      if (!chore) return;
+      if (!Array.isArray(chore.completedDates)) chore.completedDates = [];
+      const today = todayStr();
+      if (chore.completedDates.includes(today)) {
+        // undo
+        chore.completedDates = chore.completedDates.filter(d => d !== today);
+        // deduct points
+        const profile = state.profiles.find(p => p.name === chore.assignedTo);
+        if (profile && profile.type === 'child') profile.points = Math.max(0, (profile.points || 0) - (chore.points || 0));
+      } else {
+        chore.completedDates.push(today);
+        // award points
+        const profile = state.profiles.find(p => p.name === chore.assignedTo);
+        if (profile && profile.type === 'child') profile.points = (profile.points || 0) + (chore.points || 0);
+      }
+      render();
+    }));
+  document.querySelectorAll('[data-del-chore]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.chores = state.chores.filter(c => c.id !== Number(btn.dataset.delChore));
+      render();
+    }));
+  const choreDialog = document.querySelector('#chore-dialog');
+  document.querySelector('#add-chore-btn')?.addEventListener('click', () => choreDialog?.showModal());
+  document.querySelector('#chore-close')?.addEventListener('click', () => choreDialog?.close());
+  document.querySelector('#chore-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const days = data.getAll('days');
+    state.chores.push({
+      id: state.nextChoreId++,
+      title: data.get('title'),
+      emoji: data.get('emoji') || '🧹',
+      assignedTo: data.get('assignedTo'),
+      points: parseInt(data.get('points') || '0', 10),
+      days: days.length > 0 ? days : ALL_DAYS,
+      completedDates: [],
+    });
+    choreDialog?.close();
+    e.currentTarget.reset();
+    render();
+  });
+
+  // ── Rewards ───────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-del-reward]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.rewards.splice(Number(btn.dataset.delReward), 1);
+      render();
+    }));
+  document.querySelectorAll('[data-redeem-reward]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const reward = state.rewards[Number(btn.dataset.redeemReward)];
+      const profile = state.profiles.find(p => p.name === btn.dataset.redeemFor);
+      if (!reward || !profile) return;
+      if ((profile.points || 0) < reward.cost) return;
+      profile.points = (profile.points || 0) - reward.cost;
+      render();
+    }));
+  const rewardDialog = document.querySelector('#reward-dialog');
+  document.querySelector('#add-reward-btn')?.addEventListener('click', () => rewardDialog?.showModal());
+  document.querySelector('#reward-close')?.addEventListener('click', () => rewardDialog?.close());
+  document.querySelector('#reward-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    state.rewards.push({
+      id: state.nextRewardId++,
+      title: data.get('title'),
+      emoji: data.get('emoji') || '🎁',
+      cost: parseInt(data.get('cost') || '10', 10),
+    });
+    rewardDialog?.close();
+    e.currentTarget.reset();
+    render();
+  });
+
+  // ── Routines ──────────────────────────────────────────────────────────────
+  document.querySelectorAll('[data-complete-routine]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const routine = state.routines.find(r => r.id === Number(btn.dataset.completeRoutine));
+      if (!routine) return;
+      if (!Array.isArray(routine.completedDates)) routine.completedDates = [];
+      const today = todayStr();
+      if (routine.completedDates.includes(today)) {
+        routine.completedDates = routine.completedDates.filter(d => d !== today);
+      } else {
+        routine.completedDates.push(today);
+      }
+      render();
+    }));
+  document.querySelectorAll('[data-del-routine]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.routines = state.routines.filter(r => r.id !== Number(btn.dataset.delRoutine));
+      render();
+    }));
+  const routineDialog = document.querySelector('#routine-dialog');
+  document.querySelector('#add-routine-btn')?.addEventListener('click', () => routineDialog?.showModal());
+  document.querySelector('#routine-close')?.addEventListener('click', () => routineDialog?.close());
+  document.querySelector('#routine-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    const days = data.getAll('days');
+    state.routines.push({
+      id: state.nextRoutineId++,
+      title: data.get('title'),
+      emoji: data.get('emoji') || '🔁',
+      assignedTo: data.get('assignedTo') || 'Everyone',
+      timeOfDay: data.get('timeOfDay') || 'morning',
+      days: days.length > 0 ? days : ALL_DAYS,
+      reminder: data.get('reminder') === '1',
+      reminderTime: data.get('reminderTime') || null,
+      completedDates: [],
+    });
+    routineDialog?.close();
     e.currentTarget.reset();
     render();
   });
@@ -1188,7 +1768,7 @@ function scheduleNotifs() {
 
   // Calendar events — fire 5 min before their time
   state.events
-    .filter(e => e.date === todayStr2 && e.time)
+    .filter(e => e.date === todayStr2 && e.time && e.time !== 'Anytime')
     .forEach(e => {
       const [rawTime, ampm] = [e.time.slice(0, -3), e.time.slice(-2)];
       let [h, m] = rawTime.split(':').map(Number);
@@ -1207,24 +1787,75 @@ function scheduleNotifs() {
       }
     });
 
-  // Tasks — fire at morning 8am, afternoon 12pm, evening 6pm
+  // helper: schedule a single exact-time notification
+  function scheduleAt(hhmm, title, body) {
+    const [h, m] = hhmm.split(':').map(Number);
+    const fireAt = new Date(now);
+    fireAt.setHours(h, m, 0, 0);
+    const ms = fireAt - now;
+    if (ms > 0) scheduledNotifIds.push(setTimeout(() =>
+      new Notification(title, { body, icon: '/icons/icon-192.png' }), ms));
+  }
+
+  // Tasks & routines with a specific reminderTime — fire individually
+  state.tasks
+    .filter(t => t.reminder !== false && t.reminderTime && !t.done)
+    .forEach(t => scheduleAt(t.reminderTime, t.emoji + ' ' + t.title,
+      `${TIME_LABELS[t.timeOfDay] || ''} · ${t.person || ''}`.trim().replace(/^·\s*|\s*·\s*$/, '')));
+
+  state.routines
+    .filter(r => r.reminder && r.reminderTime && isDueToday(r) && !isCompletedToday(r))
+    .forEach(r => scheduleAt(r.reminderTime, (r.emoji || '🔁') + ' ' + r.title,
+      `${dayLabel(r.days)} · ${r.assignedTo || 'Everyone'}`.trim()));
+
+  // Tasks & routines WITHOUT a specific time — group by period (8am / 12pm / 6pm)
   const timeFire = { morning: [8, 0], afternoon: [12, 0], evening: [18, 0] };
   ['morning', 'afternoon', 'evening'].forEach(period => {
-    const pending = state.tasks.filter(t => t.timeOfDay === period && !t.done);
-    if (!pending.length) return;
+    const pendingTasks    = state.tasks.filter(t => t.timeOfDay === period && !t.done && t.reminder !== false && !t.reminderTime);
+    const pendingRoutines = state.routines.filter(r =>
+      r.timeOfDay === period && r.reminder && !r.reminderTime && isDueToday(r) && !isCompletedToday(r)
+    );
+    if (!pendingTasks.length && !pendingRoutines.length) return;
     const [h, m] = timeFire[period];
     const fireAt = new Date(now);
     fireAt.setHours(h, m, 0, 0);
     const ms = fireAt - now;
     if (ms > 0) {
       scheduledNotifIds.push(setTimeout(() => {
-        new Notification(`${TIME_ICONS[period]} ${TIME_LABELS[period]} tasks`, {
-          body: pending.map(t => t.emoji + ' ' + t.title).join('\n'),
+        const items = [
+          ...pendingTasks.map(t => t.emoji + ' ' + t.title),
+          ...pendingRoutines.map(r => (r.emoji || '🔁') + ' ' + r.title),
+        ];
+        new Notification(`${TIME_ICONS[period]} ${TIME_LABELS[period]}`, {
+          body: items.join('\n'),
           icon: '/icons/icon-192.png',
         });
       }, ms));
     }
   });
+
+  // Bills — fire at 9am when due today, 1 day before, or 3 days before
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  (state.bills || [])
+    .filter(b => b.reminder && !b.paid && b.dueDate)
+    .forEach(b => {
+      const due = new Date(b.dueDate + 'T00:00:00');
+      const daysUntil = Math.round((due - todayMidnight) / 86400000);
+      if (daysUntil === 3 || daysUntil === 1 || daysUntil === 0) {
+        const fireAt = new Date(now);
+        fireAt.setHours(9, 0, 0, 0);
+        const ms = fireAt - now;
+        if (ms > 0) {
+          scheduledNotifIds.push(setTimeout(() => {
+            const label = daysUntil === 0 ? 'due TODAY' : `due in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`;
+            new Notification(`💳 ${b.name} ${label}`, {
+              body: `$${Number(b.amount).toFixed(2)}${b.autopay ? ' · Autopay' : ''}`,
+              icon: '/icons/icon-192.png',
+            });
+          }, ms));
+        }
+      }
+    });
 }
 
 async function requestNotifPermission() {

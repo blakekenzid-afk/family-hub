@@ -880,3 +880,152 @@ h1, h2, h3, h4 { line-height: 1.1; }
   font-weight: 800; color: var(--ink); font-size: 1.1rem;
 }
 
+/* ── New nav colours ─────────────────────────────────────────────────────────── */
+:root {
+  --nv-orange: #ffd9b8;
+  --nv-purple: #e8d4f8;
+  --nv-teal:   #b8eee8;
+}
+.nv-orange { background: var(--nv-orange); }
+.nv-purple { background: var(--nv-purple); }
+.nv-teal   { background: var(--nv-teal);   }
+
+/* ── Profile type badge ──────────────────────────────────────────────────────── */
+.profile-type-badge {
+  font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.07em; padding: 2px 8px; border-radius: 999px;
+  background: rgba(255,255,255,0.7); color: var(--muted);
+}
+.profile-points {
+  font-size: 0.78rem; font-weight: 800;
+  color: #b8860b; background: #fff8dc;
+  border-radius: 999px; padding: 2px 10px;
+}
+
+/* ── Chores page ─────────────────────────────────────────────────────────────── */
+.chores-section { margin-bottom: 28px; }
+.chores-section-title {
+  font-size: 1rem; font-weight: 800; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.chores-section-title .points-pill {
+  font-size: 0.72rem; font-weight: 800;
+  background: #fff8dc; color: #b8860b;
+  border-radius: 999px; padding: 2px 10px;
+  margin-left: auto;
+}
+.chore-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--white); border-radius: 18px;
+  padding: 14px 16px; margin-bottom: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.chore-row.chore-done { opacity: 0.55; }
+.chore-emoji { font-size: 1.6rem; flex-shrink: 0; }
+.chore-info  { flex: 1; min-width: 0; }
+.chore-title { font-weight: 800; font-size: 0.95rem; }
+.chore-meta  { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-top: 2px; }
+.chore-pts   { font-size: 0.78rem; font-weight: 800; color: #b8860b; background: #fff8dc; border-radius: 999px; padding: 2px 9px; flex-shrink: 0; }
+.chore-complete-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--white);
+  display: grid; place-items: center; flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  font-size: 0.9rem;
+}
+.chore-complete-btn.done {
+  background: var(--green-acc); border-color: var(--green-acc); color: #fff;
+}
+
+/* ── Rewards page ────────────────────────────────────────────────────────────── */
+.rewards-balance-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;
+}
+.rewards-balance-card {
+  border-radius: 18px; padding: 16px; text-align: center;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07);
+}
+.rewards-balance-name { font-size: 0.85rem; font-weight: 800; margin-bottom: 4px; }
+.rewards-balance-pts  { font-size: 1.6rem; font-weight: 800; color: #b8860b; }
+.rewards-balance-star { font-size: 0.85rem; opacity: 0.7; }
+
+.reward-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--white); border-radius: 20px; padding: 16px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.07); margin-bottom: 10px;
+}
+.reward-emoji { font-size: 2rem; flex-shrink: 0; }
+.reward-info  { flex: 1; }
+.reward-title { font-weight: 800; font-size: 0.98rem; }
+.reward-cost  { font-size: 0.78rem; font-weight: 800; color: #b8860b; margin-top: 2px; }
+.reward-redeem-row {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0;
+}
+.redeem-btn {
+  padding: 6px 14px; border-radius: 999px;
+  background: #fff8dc; color: #b8860b;
+  font-weight: 800; font-size: 0.78rem;
+  white-space: nowrap;
+}
+.redeem-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Routines page ───────────────────────────────────────────────────────────── */
+.routines-section { margin-bottom: 24px; }
+.routine-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--white); border-radius: 18px;
+  padding: 14px 16px; margin-bottom: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.routine-row.routine-done { opacity: 0.55; }
+.routine-emoji { font-size: 1.5rem; flex-shrink: 0; }
+.routine-info  { flex: 1; min-width: 0; }
+.routine-title { font-weight: 800; font-size: 0.95rem; }
+.routine-meta  { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-top: 2px; }
+.routine-bell  { font-size: 0.85rem; opacity: 0.7; }
+
+/* ── Day checkboxes in dialogs ───────────────────────────────────────────────── */
+.days-picker {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0;
+}
+.days-picker label {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.8rem; font-weight: 700;
+  padding: 5px 10px; border-radius: 999px;
+  background: var(--bg); border: 2px solid var(--border);
+  cursor: pointer; transition: background 0.12s, border-color 0.12s;
+}
+.days-picker input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--lavender-acc); }
+.days-picker input:checked + span { color: var(--lavender-acc); }
+.days-picker label:has(input:checked) {
+  background: #f0eaf8; border-color: var(--lavender-acc);
+}
+
+
+/* ── Bills ─────────────────────────────────────────────────────────────────── */
+.bills-list { display: grid; gap: 8px; margin-bottom: 16px; }
+.bill-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--white); border-radius: 18px; padding: 14px 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.bill-icon { font-size: 1.6rem; flex-shrink: 0; }
+.bill-info { flex: 1; min-width: 0; }
+.bill-title { font-weight: 800; font-size: 0.95rem; }
+.bill-meta { font-size: 0.72rem; color: var(--muted); font-weight: 700; margin-top: 2px; }
+.bill-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+.bill-amt { font-weight: 800; font-size: 0.95rem; }
+.bill-status-badge { font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+.bill-status-badge.bill-paid  { background: #e4f5ec; color: #4db56a; }
+.bill-status-badge.bill-overdue { background: #fde8e8; color: #e05c5c; }
+.bill-status-badge.bill-soon  { background: #fdeede; color: #e07830; }
+.bill-row.bill-paid    { opacity: 0.6; }
+.bill-row.bill-overdue { border-left: 3px solid #e05c5c; }
+.bill-row.bill-soon    { border-left: 3px solid #e07830; }
+.bill-paid-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--white);
+  font-size: 0.85rem; display: grid; place-items: center;
+  flex-shrink: 0; transition: background 0.15s;
+}
+.bill-paid-btn.paid { background: var(--green-acc); border-color: var(--green-acc); color: #fff; }
