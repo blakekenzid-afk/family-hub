@@ -60,7 +60,7 @@ function assignRecipeToDay(recipeId, dayIdx) {
 // ── render + bind ─────────────────────────────────────────────────────────────
 
 function render() {
-  saveState();
+  saveState(state);
   scheduleNotifs(state);
   const app = document.querySelector('#app');
   switch (state.view) {
@@ -99,5 +99,5 @@ function bind() {
 // ── boot ──────────────────────────────────────────────────────────────────────
 
 render(); // render immediately with default state
-loadState().then(() => { render(); scheduleNotifs(state); }).catch(() => render());
+loadState(state).then(() => { render(); scheduleNotifs(state); }).catch(() => render());
 requestNotifPermission(state);
