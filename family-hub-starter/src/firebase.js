@@ -1,16 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, get, set } from 'firebase/database';
 
-// ── Replace this object with your own config from Firebase console ──────────
-// Project Settings → Your apps → SDK setup and configuration → Config
+// ── Firebase config loaded from environment variables ──────────────────────
+// Copy .env.example to .env and fill in your Firebase credentials
+// DO NOT commit .env to version control!
 const firebaseConfig = {
-  apiKey:            'AIzaSyAIsM3NTYWJGjBGf3KaEhrsliJFrl9a5xo',
-  authDomain:        'family-hub-67b12.firebaseapp.com',
-  databaseURL:       'https://family-hub-67b12-default-rtdb.firebaseio.com',
-  projectId:         'family-hub-67b12',
-  storageBucket:     'family-hub-67b12.firebasestorage.app',
-  messagingSenderId: '684989037934',
-  appId:             '1:684989037934:web:c3ba7fcb6d25387301957f',
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL:       import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 // ───────────────────────────────────────────────────────────────────────────
 
