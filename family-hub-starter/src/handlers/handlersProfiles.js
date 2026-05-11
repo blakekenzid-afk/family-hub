@@ -1,26 +1,25 @@
 // Profiles handlers
-export function setupProfiles(state, render) {
-  document.querySelectorAll('[data-del-profile]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      state.profiles.splice(Number(btn.dataset.delProfile), 1);
-      render();
-    }));
+import { createDialogSetup, createDeleteHandler } from '../utils/dialogFactory.js';
 
-  const profileDialog = document.querySelector('#profile-dialog');
-  document.querySelector('#add-profile-btn')?.addEventListener('click', () => profileDialog.showModal());
-  document.querySelector('#profile-close')?.addEventListener('click', () => profileDialog.close());
-  document.querySelector('#profile-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    state.profiles.push({
-      name: data.get('name'),
-      emoji: data.get('emoji') || '🧑',
-      color: data.get('color'),
-      type: data.get('type') || 'adult',
-      points: 0,
-    });
-    profileDialog.close();
-    e.currentTarget.reset();
-    render();
+export function setupProfiles(state, render) {
+  // Delete profile handler
+  createDeleteHandler('data-del-profile', 'profiles')(state, render);
+
+  // Add profile dialog handler
+  const addProfileSetup = createDialogSetup({
+    dialogId: 'profile-dialog',
+    openBtnId: 'add-profile-btn',
+    closeBtnId: 'profile-close',
+    formId: 'profile-form',
+    onSubmit: (data) => {
+      state.profiles.push({
+        name: data.get('name'),
+        emoji: data.get('emoji') || '🧑',
+        color: data.get('color'),
+        type: data.get('type') || 'adult',
+        points: 0,
+      });
+    },
   });
+  addProfileSetup(state, render);
 }

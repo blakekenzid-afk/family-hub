@@ -1,35 +1,36 @@
 // Rewards handlers
-export function setupRewards(state, render) {
-  document.querySelectorAll('[data-del-reward]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      state.rewards.splice(Number(btn.dataset.delReward), 1);
-      render();
-    }));
+import { createDialogSetup, createDeleteHandler } from '../utils/dialogFactory.js';
+import { findProfileByName, updateProfilePoints } from '../utils/mutations.js';
 
+export function setupRewards(state, render) {
+  // Delete reward handler
+  createDeleteHandler('data-del-reward', 'rewards')(state, render);
+
+  // Redeem reward handler
   document.querySelectorAll('[data-redeem-reward]').forEach(btn =>
     btn.addEventListener('click', () => {
       const reward = state.rewards[Number(btn.dataset.redeemReward)];
-      const profile = state.profiles.find(p => p.name === btn.dataset.redeemFor);
+      const profile = findProfileByName(state.profiles, btn.dataset.redeemFor);
       if (!reward || !profile) return;
       if ((profile.points || 0) < reward.cost) return;
-      profile.points = (profile.points || 0) - reward.cost;
+      updateProfilePoints(profile, -reward.cost);
       render();
     }));
 
-  const rewardDialog = document.querySelector('#reward-dialog');
-  document.querySelector('#add-reward-btn')?.addEventListener('click', () => rewardDialog?.showModal());
-  document.querySelector('#reward-close')?.addEventListener('click', () => rewardDialog?.close());
-  document.querySelector('#reward-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    state.rewards.push({
-      id: state.nextRewardId++,
-      title: data.get('title'),
-      emoji: data.get('emoji') || '🎁',
-      cost: parseInt(data.get('cost') || '10', 10),
-    });
-    rewardDialog?.close();
-    e.currentTarget.reset();
-    render();
+  // Add reward dialog handler
+  const addRewardSetup = createDialogSetup({
+    dialogId: 'reward-dialog',
+    openBtnId: 'add-reward-btn',
+    closeBtnId: 'reward-close',
+    formId: 'reward-form',
+    onSubmit: (data) => {
+      state.rewards.push({
+        id: state.nextRewardId++,
+        title: data.get('title'),
+        emoji: data.get('emoji') || '🎁',
+        cost: parseInt(data.get('cost') || '10', 10),
+      });
+    },
   });
+  addRewardSetup(state, render);
 }
