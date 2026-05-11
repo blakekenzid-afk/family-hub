@@ -1,7 +1,6 @@
 /**
  * Dialog Factory Utility
  * Abstracts the repeated dialog pattern used across all handlers
- * Provides a factory function to create setup functions for dialogs with forms
  */
 
 /**

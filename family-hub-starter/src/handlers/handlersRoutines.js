@@ -1,8 +1,7 @@
 // Routines handlers
-import { todayStr } from '../utils/constants.js';
-import { ALL_DAYS } from '../utils/constants.js';
+import { todayStr, isCompletedToday, isDueToday, ALL_DAYS } from '../utils/constants.js';
 import { createDialogSetup } from '../utils/dialogFactory.js';
-import { toggleCompletedDate, isCompletedToday } from '../utils/mutations.js';
+import { toggleCompletedDate } from '../utils/mutations.js';
 
 export function setupRoutines(state, render) {
   document.querySelectorAll('[data-complete-routine]').forEach(btn =>

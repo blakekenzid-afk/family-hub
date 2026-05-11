@@ -24,16 +24,6 @@ export function toggleCompletedDate(completedDates, dateStr) {
 }
 
 /**
- * Checks if an item is completed today
- * @param {Object} item - Item with completedDates array
- * @param {string} todayStr - Today's date in YYYY-MM-DD format
- * @returns {boolean} True if today is in completedDates
- */
-export function isCompletedToday(item, todayStr) {
-  return Array.isArray(item.completedDates) && item.completedDates.includes(todayStr);
-}
-
-/**
  * Awards or deducts points from a profile
  * @param {Object} profile - Profile object with points
  * @param {number} pointsToAward - Positive or negative points
@@ -53,16 +43,6 @@ export function updateProfilePoints(profile, pointsToAward) {
  */
 export function findProfileByName(profiles, name) {
   return profiles?.find(p => p.name === name);
-}
-
-/**
- * Creates a new item with auto-incrementing ID
- * @param {Object} baseObject - Base object properties
- * @param {number|string} id - ID to assign
- * @returns {Object} New object with id
- */
-export function createItemWithId(baseObject, id) {
-  return { ...baseObject, id };
 }
 
 /**

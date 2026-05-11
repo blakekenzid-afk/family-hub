@@ -99,5 +99,5 @@ function bind() {
 // ── boot ──────────────────────────────────────────────────────────────────────
 
 render(); // render immediately with default state
-loadState(state).then(() => { render(); scheduleNotifs(state); }).catch(() => render());
+loadState(state).then(() => { render(); }).catch(() => render());
 requestNotifPermission(state);

@@ -1,8 +1,7 @@
 // Chores handlers
-import { todayStr } from '../utils/constants.js';
-import { ALL_DAYS } from '../utils/constants.js';
+import { todayStr, isCompletedToday, ALL_DAYS } from '../utils/constants.js';
 import { createDialogSetup } from '../utils/dialogFactory.js';
-import { toggleCompletedDate, isCompletedToday, findProfileByName, updateProfilePoints } from '../utils/mutations.js';
+import { toggleCompletedDate, findProfileByName, updateProfilePoints } from '../utils/mutations.js';
 
 export function setupChores(state, render) {
   document.querySelectorAll('[data-complete-chore]').forEach(btn =>
