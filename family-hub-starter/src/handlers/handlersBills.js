@@ -1,5 +1,6 @@
 // Bills handlers
 import { todayStr } from '../utils/constants.js';
+import { createDialogSetup } from '../utils/dialogFactory.js';
 
 export function setupBills(state, render) {
   document.querySelectorAll('[data-toggle-bill]').forEach(btn =>
@@ -14,29 +15,27 @@ export function setupBills(state, render) {
       render();
     }));
 
-  const billDialog = document.querySelector('#bill-dialog');
-  document.querySelector('#add-bill-btn')?.addEventListener('click', () => {
-    const dd = document.querySelector('#bill-form [name=dueDate]');
-    if (dd && !dd.value) dd.value = todayStr();
-    billDialog?.showModal();
+  const addBillSetup = createDialogSetup({
+    dialogId: 'bill-dialog',
+    openBtnId: 'add-bill-btn',
+    closeBtnId: 'bill-close',
+    formId: 'bill-form',
+    onBeforeOpen: () => {
+      const dd = document.querySelector('#bill-form [name=dueDate]');
+      if (dd && !dd.value) dd.value = todayStr();
+    },
+    onSubmit: (data) => {
+      state.bills.push({
+        id: state.nextBillId++,
+        name: data.get('name'),
+        emoji: data.get('emoji') || '📄',
+        amount: parseFloat(data.get('amount')),
+        dueDate: data.get('dueDate'),
+        autopay: data.get('autopay') === '1',
+        reminder: data.get('reminder') === '1',
+        paid: false,
+      });
+    },
   });
-
-  document.querySelector('#bill-close')?.addEventListener('click', () => billDialog?.close());
-  document.querySelector('#bill-form')?.addEventListener('submit', e => {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
-    state.bills.push({
-      id: state.nextBillId++,
-      name: data.get('name'),
-      emoji: data.get('emoji') || '📄',
-      amount: parseFloat(data.get('amount')),
-      dueDate: data.get('dueDate'),
-      autopay: data.get('autopay') === '1',
-      reminder: data.get('reminder') === '1',
-      paid: false,
-    });
-    billDialog?.close();
-    e.currentTarget.reset();
-    render();
-  });
+  addBillSetup(state, render);
 }

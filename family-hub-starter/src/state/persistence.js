@@ -93,7 +93,17 @@ export function applyStateSnapshot(state, saved) {
   state.editingMealIdx = null;
   state.selectedRecipeId = null;
 
-  const toArr = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
+  // Convert objects to arrays while preserving numeric key order
+  // Handles Firebase's obj storage: {0: item, 1: item, 2: item}
+  const toArr = v => {
+    if (Array.isArray(v)) return v;
+    if (!v || typeof v !== 'object') return [];
+    // Sort numeric keys to preserve intended array order
+    return Object.keys(v)
+      .filter(k => !isNaN(k))
+      .sort((a, b) => Number(a) - Number(b))
+      .map(k => v[k]);
+  };
   state.tasks = toArr(state.tasks);
   state.events = toArr(state.events);
   state.groceries = toArr(state.groceries).map(c => ({ ...c, items: toArr(c.items) }));
@@ -107,15 +117,15 @@ export function applyStateSnapshot(state, saved) {
   state.bills = toArr(state.bills);
 
   const mealsArr = toArr(state.meals);
-  state.meals = mealsArr.length > 0 ? mealsArr : [
-    { day: 'Mon', meal: '' },
-    { day: 'Tue', meal: '' },
-    { day: 'Wed', meal: '' },
-    { day: 'Thu', meal: '' },
-    { day: 'Fri', meal: '' },
-    { day: 'Sat', meal: '' },
-    { day: 'Sun', meal: '' },
-  ];
+  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  if (mealsArr.length > 0) {
+    // Preserve day order; restore missing days
+    const mealsByDay = {};
+    mealsArr.forEach(m => { if (m && m.day) mealsByDay[m.day] = m; });
+    state.meals = DAYS.map(day => mealsByDay[day] || { day, meal: '' });
+  } else {
+    state.meals = DAYS.map(day => ({ day, meal: '' }));
+  }
 
   if (!state.budget || typeof state.budget !== 'object') {
     state.budget = { monthly: 0, categories: [], transactions: [] };

@@ -11,6 +11,7 @@
  * @param {string} config.closeBtnId - ID of the button that closes the dialog (without #)
  * @param {string} config.formId - ID of the form inside the dialog (without #)
  * @param {Function} config.onSubmit - Handler called on form submit with (formData, e) parameters
+ * @param {Function} [config.onBeforeOpen] - Optional handler called before dialog opens with (state, render)
  * @returns {Function} A setup function to be called with (state, render) signature
  */
 export function createDialogSetup(config) {
@@ -20,7 +21,12 @@ export function createDialogSetup(config) {
     const closeBtn = document.querySelector(`#${config.closeBtnId}`);
     const form = document.querySelector(`#${config.formId}`);
 
-    openBtn?.addEventListener('click', () => dialog?.showModal());
+    openBtn?.addEventListener('click', () => {
+      if (config.onBeforeOpen) {
+        config.onBeforeOpen(state, render);
+      }
+      dialog?.showModal();
+    });
     closeBtn?.addEventListener('click', () => dialog?.close());
 
     form?.addEventListener('submit', e => {
