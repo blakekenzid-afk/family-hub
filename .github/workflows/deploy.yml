@@ -37,3 +37,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: family-hub-67b12
           channelId: live
+          entryPoint: family-hub-starter
