@@ -460,11 +460,11 @@ h1, h2, h3, h4 { line-height: 1.1; }
 }
 /* ── Budget ───────────────────────────────────────────────────────────────────── */
 .budget-summary {
-  background: linear-gradient(135deg, #1a1a2e, #2e2e50);
+  background: var(--lavender-bg);
   border-radius: 22px;
   padding: 24px;
   margin-bottom: 22px;
-  color: #fff;
+  color: var(--ink);
 }
 .budget-label  { font-size: 0.8rem; font-weight: 700; opacity: 0.65; margin-bottom: 6px; }
 .budget-amount { font-size: 2rem; font-weight: 800; margin-bottom: 14px; }
@@ -472,7 +472,7 @@ h1, h2, h3, h4 { line-height: 1.1; }
 .budget-pct    { font-size: 0.78rem; font-weight: 700; opacity: 0.6; margin-top: 6px; }
 
 .budget-bar-wrap {
-  background: rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.08);
   border-radius: 999px;
   height: 8px;
   overflow: hidden;
