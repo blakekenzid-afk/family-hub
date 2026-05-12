@@ -3,6 +3,13 @@ import { todayStr } from '../utils/constants.js';
 import { createDialogSetup } from '../utils/dialogFactory.js';
 
 export function setupBills(state, render) {
+  // Tab switching
+  document.querySelectorAll('[data-budget-tab]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      state.budgetTab = btn.dataset.budgetTab;
+      render();
+    }));
+
   document.querySelectorAll('[data-toggle-bill]').forEach(btn =>
     btn.addEventListener('click', () => {
       const b = state.bills[Number(btn.dataset.toggleBill)];

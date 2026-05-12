@@ -26,6 +26,7 @@ export function saveToLocalStorage(state) {
     const s = { ...state, currentDate: state.currentDate.toISOString() };
     delete s.editingMealIdx;
     delete s.selectedRecipeId;
+    delete s.budgetViewMonth;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
   } catch (e) {
     console.warn('localStorage save failed:', e.message);
@@ -49,6 +50,7 @@ export function saveState(state) {
       const s = { ...state, currentDate: state.currentDate.toISOString() };
       delete s.editingMealIdx;
       delete s.selectedRecipeId;
+      delete s.budgetViewMonth;
       await set(stateRef, s);
       syncStatus = 'idle';
       lastSyncTime = new Date();
@@ -90,6 +92,7 @@ export async function loadState(state) {
 export function applyStateSnapshot(state, saved) {
   Object.assign(state, saved);
   state.currentDate = saved.currentDate ? new Date(saved.currentDate) : new Date();
+  state.budgetViewMonth = saved.budgetViewMonth ? new Date(saved.budgetViewMonth) : new Date();
   state.editingMealIdx = null;
   state.selectedRecipeId = null;
 
@@ -128,9 +131,13 @@ export function applyStateSnapshot(state, saved) {
   }
 
   if (!state.budget || typeof state.budget !== 'object') {
-    state.budget = { monthly: 0, categories: [], transactions: [] };
+    state.budget = { periodAmount: 0, periodType: 'monthly', categories: [], transactions: [] };
   } else {
-    state.budget.monthly = typeof state.budget.monthly === 'number' ? state.budget.monthly : 0;
+    // Backward compatibility: migrate budget.monthly → budget.periodAmount
+    const periodAmount = typeof state.budget.periodAmount === 'number' ? state.budget.periodAmount :
+                        (typeof state.budget.monthly === 'number' ? state.budget.monthly : 0);
+    state.budget.periodAmount = periodAmount;
+    state.budget.periodType = state.budget.periodType || 'monthly';
     state.budget.categories = toArr(state.budget.categories);
     state.budget.transactions = toArr(state.budget.transactions);
   }

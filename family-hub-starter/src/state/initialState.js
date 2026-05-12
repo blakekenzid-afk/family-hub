@@ -1,6 +1,8 @@
 export const initialState = {
   view: 'home',
   currentDate: new Date(),
+  budgetTab: 'budget',
+  budgetViewMonth: new Date(),
   tasks: [],
   events: [],
   meals: [
@@ -29,7 +31,8 @@ export const initialState = {
   profiles: [],
   notifications: [],
   budget: {
-    monthly: 0,
+    periodAmount: 0,
+    periodType: 'monthly',
     categories: [],
     transactions: [],
   },
