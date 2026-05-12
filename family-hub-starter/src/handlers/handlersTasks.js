@@ -2,10 +2,10 @@
 import { createDialogSetup } from '../utils/dialogFactory.js';
 
 export function setupTasks(state, render) {
-  document.querySelectorAll('[data-task-toggle]').forEach(btn =>
+  document.querySelectorAll('[data-check-task]').forEach(btn =>
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const task = state.tasks.find(t => t.id === Number(btn.dataset.taskToggle));
+      const task = state.tasks.find(t => t.id === Number(btn.dataset.checkTask));
       if (task) { task.done = !task.done; render(); }
     }));
 

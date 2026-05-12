@@ -11,8 +11,8 @@ function renderTaskCard(task) {
           ${task.reminderTime ? `<div style="font-size:0.68rem;color:var(--muted);font-weight:700;margin-top:2px">🔔 ${task.reminderTime}</div>` : ''}
         </div>
         <div class="task-actions">
-          <button class="task-toggle${task.done ? ' checked' : ''}"
-                  data-task-toggle="${task.id}" type="button"
+          <button class="check-circle${task.done ? ' done' : ''}"
+                  data-check-task="${task.id}" type="button"
                   aria-label="${task.done ? 'Mark incomplete' : 'Mark complete'}"></button>
           <button class="del-sm" data-del-task="${task.id}" type="button" aria-label="Delete task">×</button>
         </div>

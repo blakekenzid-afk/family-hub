@@ -622,14 +622,56 @@ h1, h2, h3, h4 { line-height: 1.1; }
   padding: 2px 5px;
   overflow: hidden;
 }
-.cal-evt-del {
-  flex-shrink: 0;
+.cal-evt .cal-evt-del {
   width: 13px; height: 13px; border-radius: 50%;
   background: rgba(155,110,212,0.18); color: var(--lavender-acc);
   font-size: 0.65rem; font-weight: 900;
-  display: grid; place-items: center; margin-left: auto;
+  display: grid; place-items: center; margin-left: auto; flex-shrink: 0;
+  padding: 0;
 }
-.cal-evt-del:hover { background: #fde8e8; color: #e05c5c; }
+.cal-evt .cal-evt-del:hover { background: #fde8e8; color: #e05c5c; }
+
+/* Event color variants */
+.cal-evt.lavender { background: var(--lavender-bg); color: var(--lavender-acc); }
+.cal-evt.blue     { background: var(--blue-bg);     color: var(--blue-acc);     }
+.cal-evt.pink     { background: var(--pink-bg);     color: var(--pink-acc);     }
+.cal-evt.green    { background: var(--green-bg);    color: var(--green-acc);    }
+.cal-evt.orange   { background: #fdeede; color: #e07830; }
+.cal-evt.teal     { background: #ddf4f0; color: #2aaa8e; }
+.cal-evt.yellow   { background: #fdf6d4; color: #c9a000; }
+.cal-evt.red      { background: #fde4e4; color: #d43a3a; }
+
+/* Event badge for multiple events */
+.cal-evt-badge {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.65rem; font-weight: 700;
+  background: var(--lavender-bg);
+  color: var(--lavender-acc);
+  border-radius: 6px;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+
+/* Day detail event item */
+.day-detail-event {
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px; border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 8px; background: var(--bg);
+}
+.event-emoji { font-size: 1.5rem; flex-shrink: 0; }
+.event-info { flex: 1; min-width: 0; }
+.event-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
+.event-meta { font-size: 0.8rem; color: var(--muted); }
+.day-detail-edit,.day-detail-delete {
+  flex-shrink: 0; padding: 4px 8px; border-radius: 6px;
+  background: rgba(0,0,0,0.05); color: var(--muted);
+  font-size: 0.85rem; transition: background 0.15s, color 0.15s;
+}
+.day-detail-edit:hover { background: var(--lavender-bg); color: var(--lavender-acc); }
+.day-detail-delete:hover { background: #fde8e8; color: #e05c5c; }
+
+/* Calendar event actions hide when 2+ events */
+.cal-evt-actions { display: none; }
 
 /* ── Edit/Delete UI ─────────────────────────────────────────────────────────── */
 .task-actions { display: flex; align-items: center; gap: 6px; }

@@ -4,7 +4,7 @@ export const initialState = {
   budgetTab: 'budget',
   budgetViewMonth: new Date(),
   tasks: [],
-  events: [],
+  events: [], // Event structure: {id, title, date, time, person, category, emoji, personId}
   meals: [
     { day: 'Mon', meal: '' },
     { day: 'Tue', meal: '' },

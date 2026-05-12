@@ -1,4 +1,5 @@
 import { get, set, stateRef } from '../firebase.js';
+import { getEmojiForCategory } from '../utils/constants.js';
 
 let firebaseReady = false;
 let syncStatus = 'idle';
@@ -108,7 +109,12 @@ export function applyStateSnapshot(state, saved) {
       .map(k => v[k]);
   };
   state.tasks = toArr(state.tasks);
-  state.events = toArr(state.events);
+  state.events = toArr(state.events).map(e => ({
+    ...e,
+    category: e.category || 'other',
+    emoji: e.emoji || getEmojiForCategory(e.category || 'other'),
+    personId: e.personId || null
+  }));
   state.groceries = toArr(state.groceries).map(c => ({ ...c, items: toArr(c.items) }));
   state.lists = toArr(state.lists).map(l => ({ ...l, items: toArr(l.items) }));
   state.profiles = toArr(state.profiles).map(p => ({ type: 'adult', points: 0, ...p }));

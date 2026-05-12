@@ -1,6 +1,15 @@
 export const TIME_ICONS = { morning: '🌤️', afternoon: '☀️', evening: '🌙' };
 export const TIME_LABELS = { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening' };
 
+export const EVENT_CATEGORIES = ['birthday', 'appointment', 'holiday', 'vacation', 'other'];
+export const EVENT_CATEGORY_EMOJIS = {
+  'birthday': '🎂',
+  'appointment': '🏥',
+  'holiday': '🎉',
+  'vacation': '✈️',
+  'other': '📅'
+};
+
 export const NAV_ITEMS = [
   { label: 'Tasks', icon: '✅', view: 'tasks', cls: 'nv-green' },
   { label: 'Calendar', icon: '📅', view: 'calendar', cls: 'nv-red' },
@@ -65,4 +74,8 @@ export function dayPickerHtml(name, selected = ALL_DAYS) {
       <input type="checkbox" name="${name}" value="${d}"${selected.includes(d) ? ' checked' : ''}>
       <span>${d}</span>
     </label>`).join('')}</div>`;
+}
+
+export function getEmojiForCategory(cat) {
+  return EVENT_CATEGORY_EMOJIS[cat] || EVENT_CATEGORY_EMOJIS['other'];
 }
