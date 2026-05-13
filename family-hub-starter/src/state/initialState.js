@@ -1,6 +1,7 @@
 export const initialState = {
   view: 'home',
   currentDate: new Date(),
+  calendarViewMode: 'month', // 'month', 'week', or 'day'
   budgetTab: 'budget',
   budgetViewMonth: new Date(),
   tasks: [],

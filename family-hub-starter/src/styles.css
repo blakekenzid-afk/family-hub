@@ -673,6 +673,100 @@ h1, h2, h3, h4 { line-height: 1.1; }
 /* Calendar event actions hide when 2+ events */
 .cal-evt-actions { display: none; }
 
+/* ── Calendar view tabs ──────────────────────────────────────────────────── */
+.cal-view-tabs {
+  display: flex; gap: 10px; margin: 14px 0;
+  justify-content: center;
+}
+.cal-tab {
+  padding: 8px 16px; border-radius: 8px;
+  background: var(--border); color: var(--muted);
+  font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s;
+  border: none;
+}
+.cal-tab.active {
+  background: var(--lavender-acc); color: white;
+}
+.cal-tab:hover:not(.active) { background: rgba(155, 110, 212, 0.15); }
+
+/* ── Week view grid ──────────────────────────────────────────────────────── */
+.cal-week-grid-wrap { background: var(--white); border-radius: 22px; padding: 18px; box-shadow: 0 2px 14px rgba(0,0,0,0.06); }
+.cal-week-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+}
+.cal-week-day {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px; border-radius: 12px; background: var(--bg);
+  min-height: 100px; cursor: pointer;
+  border: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cal-week-day.today {
+  border-color: var(--blue-acc); background: var(--blue-bg);
+}
+.cal-week-day:hover { background: #f0eaf8; }
+.cal-week-date {
+  font-weight: 700; font-size: 0.95rem; color: var(--ink);
+}
+.cal-week-events { display: flex; flex-direction: column; gap: 3px; }
+.cal-week-evt { margin: 0; }
+
+/* ── Day view grid ───────────────────────────────────────────────────────── */
+.cal-day-grid-wrap { background: var(--white); border-radius: 22px; padding: 18px; box-shadow: 0 2px 14px rgba(0,0,0,0.06); }
+.cal-day-grid { display: grid; grid-template-columns: 1fr; }
+.cal-day-all-day {
+  padding: 12px; margin-bottom: 2px;
+  background: var(--lavender-bg); border-radius: 12px;
+  border-bottom: 2px solid var(--border);
+}
+.cal-day-all-day-label {
+  font-weight: 700; font-size: 0.85rem;
+  color: var(--lavender-acc); margin-bottom: 8px;
+}
+.cal-day-all-day-events { display: flex; flex-direction: column; gap: 6px; }
+.cal-day-times {
+  display: grid; grid-template-columns: 60px 1fr; gap: 0;
+  border: 1px solid var(--border); border-radius: 12px;
+  margin-top: 8px; overflow: hidden;
+}
+.cal-day-time-col {
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+}
+.cal-day-hour-label {
+  font-size: 0.7rem; font-weight: 600; color: var(--muted);
+  padding: 4px 6px; text-align: right;
+  min-height: 60px; display: flex; align-items: center; justify-content: flex-end;
+  border-bottom: 1px solid var(--border);
+}
+.cal-day-hour-label:last-child { border-bottom: none; }
+.cal-day-hours { display: flex; flex-direction: column; }
+.cal-day-hour {
+  display: flex; flex-direction: column; gap: 2px;
+  min-height: 60px; padding: 4px;
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+  cursor: pointer;
+}
+.cal-day-hour:hover { background: rgba(155, 110, 212, 0.05); }
+.cal-day-hour:last-child { border-bottom: none; }
+.cal-day-event-item {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 6px; border-radius: 6px;
+  font-size: 0.72rem; font-weight: 600;
+  background: var(--lavender-bg); color: var(--lavender-acc);
+  max-height: 18px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.cal-day-event-item.lavender { background: var(--lavender-bg); color: var(--lavender-acc); }
+.cal-day-event-item.blue     { background: var(--blue-bg);     color: var(--blue-acc);     }
+.cal-day-event-item.pink     { background: var(--pink-bg);     color: var(--pink-acc);     }
+.cal-day-event-item.green    { background: var(--green-bg);    color: var(--green-acc);    }
+.cal-day-event-item.orange   { background: #fdeede; color: #e07830; }
+.cal-day-event-item.teal     { background: #ddf4f0; color: #2aaa8e; }
+.cal-day-event-item.yellow   { background: #fdf6d4; color: #c9a000; }
+.cal-day-event-item.red      { background: #fde4e4; color: #d43a3a; }
+
 /* ── Edit/Delete UI ─────────────────────────────────────────────────────────── */
 .task-actions { display: flex; align-items: center; gap: 6px; }
 .del-sm {
