@@ -858,6 +858,13 @@ h1, h2, h3, h4 { line-height: 1.1; }
   align-items: center;
   gap: 12px;
 }
+.profile-buttons {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 8px;
+}
 .profile-card.lavender { background: var(--lavender-bg); }
 .profile-card.blue     { background: var(--blue-bg);     }
 .profile-card.pink     { background: var(--pink-bg);     }

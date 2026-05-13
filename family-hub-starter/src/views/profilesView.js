@@ -11,7 +11,10 @@ export function renderProfiles() {
       <div class="profiles-grid">
         ${state.profiles.map((p, i) => `
           <div class="profile-card ${p.color}">
-            <button class="del-sm profile-del" data-del-profile="${p.id}" type="button" aria-label="Remove">×</button>
+            <div class="profile-buttons">
+              <button class="icon-btn" data-edit-profile="${p.id}" type="button" title="Edit">✏️</button>
+              <button class="del-sm" data-del-profile="${p.id}" type="button" title="Delete">×</button>
+            </div>
             <div class="profile-avatar">${p.emoji}</div>
             <span class="profile-name">${p.name}</span>
             <span class="profile-type-badge">${p.type === 'child' ? '👶 Child' : '🧑 Adult'}</span>
@@ -23,6 +26,7 @@ export function renderProfiles() {
         <form class="dialog-card" id="profile-form">
           <button class="close-btn" type="button" id="profile-close">×</button>
           <p class="eyebrow">New Profile</p>
+          <input type="hidden" name="profile-id">
           <label>Name <input required name="name" placeholder="Sam"></label>
           <label>Emoji <input name="emoji" placeholder="🧑" maxlength="2" value="🧑"></label>
           <label>Type
