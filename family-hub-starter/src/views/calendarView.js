@@ -1,5 +1,5 @@
 import { state } from '../main.js';
-import { todayStr, getEmojiForCategory } from '../utils/constants.js';
+import { todayStr, getEmojiForCategory, escapeHtml } from '../utils/constants.js';
 
 // Helper to get person color class
 const getPersonColor = (personId) => {
@@ -83,7 +83,7 @@ function renderMonthView() {
             const color = getPersonColor(e.personId);
             eventHtml = `
               <div class="cal-evt ${color}" data-cal-date="${iso}">
-                ${e.emoji || '📅'} ${e.title}
+                ${e.emoji || '📅'} ${escapeHtml(e.title)}
                 <button class="cal-evt-del" data-del-event="${e.id}" type="button" aria-label="Remove">×</button>
               </div>`;
           } else {
@@ -138,7 +138,7 @@ function renderWeekView() {
     } else if (evts.length === 1) {
       const e = evts[0];
       const color = getPersonColor(e.personId);
-      eventsHtml = `<div class="cal-evt ${color} cal-week-evt" data-cal-date="${iso}">${e.emoji || '📅'} ${e.title}</div>`;
+      eventsHtml = `<div class="cal-evt ${color} cal-week-evt" data-cal-date="${iso}">${e.emoji || '📅'} ${escapeHtml(e.title)}</div>`;
     } else {
       const firstEmoji = evts[0].emoji || '📅';
       eventsHtml = `<div class="cal-evt-badge cal-week-evt" data-day-detail="${iso}" title="Click to see ${evts.length} events">${firstEmoji} ${evts.length}</div>`;
@@ -189,7 +189,7 @@ function renderDayView() {
         <div class="cal-day-all-day-events">
           ${allDayEvts.map(e => `
             <div class="cal-day-event-item ${getPersonColor(e.personId)}" data-event-id="${e.id}">
-              <span>${e.emoji || '📅'}</span> ${e.title}
+              <span>${e.emoji || '📅'}</span> ${escapeHtml(e.title)}
             </div>`).join('')}
         </div>
       </div>`;
@@ -211,7 +211,7 @@ function renderDayView() {
     if (hourEvts.length > 0) {
       gridHtml += hourEvts.map(e => `
         <div class="cal-day-event-item ${getPersonColor(e.personId)}" data-event-id="${e.id}">
-          <span>${e.emoji || '📅'}</span> ${e.title}
+          <span>${e.emoji || '📅'}</span> ${escapeHtml(e.title)}
         </div>`).join('');
     }
     gridHtml += '</div>';

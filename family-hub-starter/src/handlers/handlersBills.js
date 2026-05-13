@@ -12,13 +12,15 @@ export function setupBills(state, render) {
 
   document.querySelectorAll('[data-toggle-bill]').forEach(btn =>
     btn.addEventListener('click', () => {
-      const b = state.bills[Number(btn.dataset.toggleBill)];
+      const billId = Number(btn.dataset.toggleBill);
+      const b = state.bills.find(bill => bill.id === billId);
       if (b) { b.paid = !b.paid; render(); }
     }));
 
   document.querySelectorAll('[data-del-bill]').forEach(btn =>
     btn.addEventListener('click', () => {
-      state.bills.splice(Number(btn.dataset.delBill), 1);
+      const billId = Number(btn.dataset.delBill);
+      state.bills = state.bills.filter(bill => bill.id !== billId);
       render();
     }));
 

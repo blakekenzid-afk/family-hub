@@ -9,7 +9,8 @@ export function setupRewards(state, render) {
   // Redeem reward handler
   document.querySelectorAll('[data-redeem-reward]').forEach(btn =>
     btn.addEventListener('click', () => {
-      const reward = state.rewards[Number(btn.dataset.redeemReward)];
+      const rewardId = Number(btn.dataset.redeemReward);
+      const reward = state.rewards.find(r => r.id === rewardId);
       const profile = findProfileByName(state.profiles, btn.dataset.redeemFor);
       if (!reward || !profile) return;
       if ((profile.points || 0) < reward.cost) return;

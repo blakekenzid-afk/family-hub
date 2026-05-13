@@ -52,13 +52,13 @@ export function createDeleteHandler(selectorAttr, stateKey, deleteHandler) {
     document.querySelectorAll(`[${selectorAttr}]`).forEach(btn => {
       btn.addEventListener('click', () => {
         const itemId = Number(btn.dataset[selectorAttr.replace('data-', '')]);
-        const item = state[stateKey]?.[itemId];
 
         if (deleteHandler) {
+          const item = state[stateKey]?.find(i => i.id === itemId);
           deleteHandler(btn, item, state, render);
         } else {
-          // Default: splice by index
-          state[stateKey]?.splice(itemId, 1);
+          // Default: filter by ID (safe for items with IDs)
+          state[stateKey] = state[stateKey]?.filter(item => item.id !== itemId) || [];
         }
         render();
       });

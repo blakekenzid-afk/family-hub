@@ -1,5 +1,5 @@
 import { state } from '../main.js';
-import { todayStr, fmtLong, NAV_ITEMS } from '../utils/constants.js';
+import { todayStr, fmtLong, NAV_ITEMS, escapeHtml } from '../utils/constants.js';
 
 export function renderHome() {
   const today = todayStr();
@@ -51,7 +51,7 @@ export function renderHome() {
                 <li class="event-row">
                   <span class="event-dot"></span>
                   <span class="event-time">${dateLabel}${e.time && e.time !== 'Anytime' ? ' · ' + e.time : ''}</span>
-                  <span class="event-title">${e.title}</span>
+                  <span class="event-title">${escapeHtml(e.title)}</span>
                   <span class="event-person">${e.person || ''}</span>
                 </li>`;
               }).join('')}
@@ -70,7 +70,7 @@ export function renderHome() {
             return `
             <li class="event-row">
               <span style="font-size:1.1rem">${b.emoji || '📄'}</span>
-              <span class="event-title">${b.name}</span>
+              <span class="event-title">${escapeHtml(b.name)}</span>
               <span style="margin-left:auto;font-weight:800;font-size:0.85rem;color:${color}">${label}</span>
               <span style="font-weight:800;font-size:0.92rem">$${Number(b.amount).toFixed(2)}</span>
             </li>`;

@@ -1,5 +1,5 @@
 // Calendar handlers
-import { getEmojiForCategory } from '../utils/constants.js';
+import { getEmojiForCategory, escapeHtml } from '../utils/constants.js';
 
 export function setupCalendar(state, render) {
   const calDialog = document.querySelector('#cal-dialog');
@@ -20,7 +20,7 @@ export function setupCalendar(state, render) {
         <div class="day-detail-event">
           <span class="event-emoji">${e.emoji || '📅'}</span>
           <div class="event-info">
-            <div class="event-title">${e.title}</div>
+            <div class="event-title">${escapeHtml(e.title)}</div>
             <div class="event-meta">${e.time || 'Anytime'} • ${personName} • ${e.category || 'other'}</div>
           </div>
           <button class="day-detail-edit" data-edit-detail-event="${e.id}" type="button" style="padding:4px 8px;font-size:0.9rem">✏️</button>
