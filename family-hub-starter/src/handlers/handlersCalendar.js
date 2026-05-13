@@ -46,17 +46,6 @@ export function setupCalendar(state, render) {
   });
 
   // Prev/Next buttons - different logic per view
-  const updateNavigation = () => {
-    const prevBtn = document.querySelector('#cal-prev');
-    const nextBtn = document.querySelector('#cal-next');
-
-    prevBtn?.removeEventListener('click', handlePrev);
-    nextBtn?.removeEventListener('click', handleNext);
-
-    prevBtn?.addEventListener('click', handlePrev);
-    nextBtn?.addEventListener('click', handleNext);
-  };
-
   const handlePrev = () => {
     if (state.calendarViewMode === 'month') {
       const year = state.currentDate.getFullYear();
@@ -83,109 +72,11 @@ export function setupCalendar(state, render) {
     render();
   };
 
-  updateNavigation();
-
-  // Day detail dialog handlers
-  document.addEventListener('click', (e) => {
-    // Click on event from week/day view
-    if (e.target.closest('[data-event-id]')) {
-      const item = e.target.closest('[data-event-id]');
-      const eventId = Number(item.dataset.eventId);
-      const event = state.events.find(ev => ev.id === eventId);
-      if (!event) return;
-      const iso = event.date;
-      renderDayDetailEvents(iso);
-      dayDetailDialog.showModal();
-      return;
-    }
-
-    // Click on day detail badge/cell
-    if (e.target.matches('[data-day-detail]')) {
-      e.stopPropagation();
-      const iso = e.target.dataset.dayDetail;
-      renderDayDetailEvents(iso);
-      dayDetailDialog.showModal();
-      return;
-    }
-
-    // Click calendar cell (month view only)
-    if (e.target.closest('[data-cal-date]')) {
-      if (state.calendarViewMode !== 'month') return;
-      const cell = e.target.closest('[data-cal-date]');
-      if (e.target.closest('[data-del-event]')) return;
-      if (e.target.closest('[data-day-detail]')) return;
-
-      const evts = state.events.filter(ev => ev.date === cell.dataset.calDate);
-      if (evts.length > 1) {
-        renderDayDetailEvents(cell.dataset.calDate);
-        dayDetailDialog.showModal();
-      } else {
-        document.querySelector('#cal-form').dataset.editEventId = '';
-        const dateInput = document.querySelector('#cal-date-input');
-        if (dateInput) dateInput.value = cell.dataset.calDate;
-        document.querySelector('#cal-form').reset();
-        calDialog.showModal();
-      }
-    }
-  });
-
-  // Day view hour click
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-hour]') && state.calendarViewMode === 'day') {
-      const hour = Number(e.target.closest('[data-hour]').dataset.hour);
-      if (e.target.closest('[data-event-id]')) return; // Don't trigger if clicking existing event
-
-      // Pre-fill time in form
-      const timeStr = hour < 12 ? `${hour}:00 AM` : (hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`);
-      document.querySelector('#cal-form [name=time]').value = timeStr;
-      document.querySelector('#cal-form').dataset.editEventId = '';
-
-      const dateInput = document.querySelector('#cal-date-input');
-      const dayISO = state.currentDate.toISOString().slice(0,10);
-      if (dateInput) dateInput.value = dayISO;
-      document.querySelector('#cal-form').reset();
-      document.querySelector('#cal-form [name=time]').value = timeStr;
-
-      calDialog.showModal();
-    }
-  });
+  document.querySelector('#cal-prev')?.addEventListener('click', handlePrev);
+  document.querySelector('#cal-next')?.addEventListener('click', handleNext);
 
   document.querySelector('#cal-day-detail-close')?.addEventListener('click', () => dayDetailDialog.close());
-
-  // Edit event from day detail
-  document.addEventListener('click', (e) => {
-    if (e.target.matches('[data-edit-detail-event]')) {
-      e.stopPropagation();
-      const eventId = Number(e.target.dataset.editDetailEvent);
-      const event = state.events.find(ev => ev.id === eventId);
-      if (!event) return;
-
-      // Pre-fill form with event data
-      const dateInput = document.querySelector('#cal-date-input');
-      if (dateInput) dateInput.value = event.date;
-      document.querySelector('#cal-form [name=title]').value = event.title;
-      document.querySelector('#cal-form [name=category]').value = event.category || 'other';
-      document.querySelector('#cal-form [name=emoji]').value = event.emoji || getEmojiForCategory(event.category || 'other');
-      document.querySelector('#cal-form [name=time]').value = event.time || '';
-      document.querySelector('#cal-form [name=personId]').value = event.personId || '';
-
-      // Mark form for update instead of create
-      document.querySelector('#cal-form').dataset.editEventId = eventId;
-
-      dayDetailDialog.close();
-      calDialog.showModal();
-    }
-  });
-
-  // Delete event from day detail
-  document.addEventListener('click', (e) => {
-    if (e.target.matches('[data-del-detail-event]')) {
-      e.stopPropagation();
-      const eventId = Number(e.target.dataset.delDetailEvent);
-      state.events = state.events.filter(ev => ev.id !== eventId);
-      render();
-    }
-  });
+  document.querySelector('#cal-close')?.addEventListener('click', () => calDialog.close());
 
   // Category change handler - update emoji suggestion
   document.querySelector('#cal-form [name=category]')?.addEventListener('change', function() {
@@ -195,8 +86,7 @@ export function setupCalendar(state, render) {
     }
   });
 
-  document.querySelector('#cal-close')?.addEventListener('click', () => calDialog.close());
-
+  // Form submit handler
   document.querySelector('#cal-form')?.addEventListener('submit', e => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
@@ -206,19 +96,17 @@ export function setupCalendar(state, render) {
       title: data.get('title'),
       date: data.get('date'),
       time: data.get('time') || 'Anytime',
-      person: data.get('person') || 'Family', // Keep for backward compat
+      person: data.get('person') || 'Family',
       category: data.get('category') || 'other',
       emoji: data.get('emoji') || getEmojiForCategory(data.get('category') || 'other'),
       personId: data.get('personId') || null
     };
 
     if (editEventId) {
-      // Update existing event
       const event = state.events.find(ev => ev.id === Number(editEventId));
       if (event) Object.assign(event, eventData);
       e.currentTarget.dataset.editEventId = '';
     } else {
-      // Create new event
       state.events.push({ id: state.nextEventId++, ...eventData });
     }
 
@@ -227,10 +115,105 @@ export function setupCalendar(state, render) {
     render();
   });
 
-  document.querySelectorAll('[data-del-event]').forEach(btn =>
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      state.events = state.events.filter(ev => ev.id !== Number(btn.dataset.delEvent));
-      render();
-    }));
+  // Unified click delegation handler for calendar area
+  const pageEl = document.querySelector('.page');
+  if (pageEl) {
+    pageEl.addEventListener('click', (e) => {
+      // Click on existing event
+      if (e.target.closest('[data-event-id]')) {
+        const item = e.target.closest('[data-event-id]');
+        const eventId = Number(item.dataset.eventId);
+        const event = state.events.find(ev => ev.id === eventId);
+        if (event) {
+          renderDayDetailEvents(event.date);
+          dayDetailDialog.showModal();
+        }
+        return;
+      }
+
+      // Click on multi-event badge
+      if (e.target.matches('[data-day-detail]')) {
+        e.stopPropagation();
+        renderDayDetailEvents(e.target.dataset.dayDetail);
+        dayDetailDialog.showModal();
+        return;
+      }
+
+      // Click calendar cell (month view)
+      if (e.target.closest('[data-cal-date]')) {
+        if (state.calendarViewMode !== 'month') return;
+        const cell = e.target.closest('[data-cal-date]');
+        if (e.target.closest('[data-del-event]')) return;
+        if (e.target.closest('[data-day-detail]')) return;
+
+        const evts = state.events.filter(ev => ev.date === cell.dataset.calDate);
+        if (evts.length > 1) {
+          renderDayDetailEvents(cell.dataset.calDate);
+          dayDetailDialog.showModal();
+        } else {
+          document.querySelector('#cal-form').dataset.editEventId = '';
+          const dateInput = document.querySelector('#cal-date-input');
+          if (dateInput) dateInput.value = cell.dataset.calDate;
+          document.querySelector('#cal-form').reset();
+          calDialog.showModal();
+        }
+        return;
+      }
+
+      // Click hour slot (day view)
+      if (e.target.closest('[data-hour]') && state.calendarViewMode === 'day') {
+        if (e.target.closest('[data-event-id]')) return;
+        const hour = Number(e.target.closest('[data-hour]').dataset.hour);
+        const timeStr = hour < 12 ? `${hour}:00 AM` : (hour === 12 ? '12:00 PM' : `${hour - 12}:00 PM`);
+
+        document.querySelector('#cal-form').dataset.editEventId = '';
+        document.querySelector('#cal-form [name=time]').value = timeStr;
+        const dateInput = document.querySelector('#cal-date-input');
+        const dayISO = state.currentDate.toISOString().slice(0, 10);
+        if (dateInput) dateInput.value = dayISO;
+        document.querySelector('#cal-form').reset();
+        document.querySelector('#cal-form [name=time]').value = timeStr;
+        calDialog.showModal();
+        return;
+      }
+
+      // Edit event from day detail
+      if (e.target.matches('[data-edit-detail-event]')) {
+        e.stopPropagation();
+        const eventId = Number(e.target.dataset.editDetailEvent);
+        const event = state.events.find(ev => ev.id === eventId);
+        if (!event) return;
+
+        const dateInput = document.querySelector('#cal-date-input');
+        if (dateInput) dateInput.value = event.date;
+        document.querySelector('#cal-form [name=title]').value = event.title;
+        document.querySelector('#cal-form [name=category]').value = event.category || 'other';
+        document.querySelector('#cal-form [name=emoji]').value = event.emoji || getEmojiForCategory(event.category || 'other');
+        document.querySelector('#cal-form [name=time]').value = event.time || '';
+        document.querySelector('#cal-form [name=personId]').value = event.personId || '';
+        document.querySelector('#cal-form').dataset.editEventId = eventId;
+
+        dayDetailDialog.close();
+        calDialog.showModal();
+        return;
+      }
+
+      // Delete event from day detail
+      if (e.target.matches('[data-del-detail-event]')) {
+        e.stopPropagation();
+        const eventId = Number(e.target.dataset.delDetailEvent);
+        state.events = state.events.filter(ev => ev.id !== eventId);
+        render();
+        return;
+      }
+
+      // Delete event from calendar view
+      if (e.target.closest('[data-del-event]')) {
+        e.stopPropagation();
+        const btn = e.target.closest('[data-del-event]');
+        state.events = state.events.filter(ev => ev.id !== Number(btn.dataset.delEvent));
+        render();
+      }
+    });
+  }
 }

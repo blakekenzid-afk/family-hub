@@ -12,12 +12,6 @@ export function setupNav(state, render) {
   document.querySelector('#today-btn')?.addEventListener('click', () => {
     state.currentDate = new Date(); render();
   });
-  document.querySelector('#cal-prev')?.addEventListener('click', () => {
-    state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() - 1, 1);
-    render();
-  });
-  document.querySelector('#cal-next')?.addEventListener('click', () => {
-    state.currentDate = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth() + 1, 1);
-    render();
-  });
+  // Note: #cal-prev and #cal-next are handled by handlersCalendar.js with view-mode awareness
 }
+
