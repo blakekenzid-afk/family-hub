@@ -13,6 +13,7 @@ export function setupProfiles(state, render) {
     formId: 'profile-form',
     onSubmit: (data) => {
       state.profiles.push({
+        id: state.nextProfileId++,
         name: data.get('name'),
         emoji: data.get('emoji') || '🧑',
         color: data.get('color'),

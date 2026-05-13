@@ -87,8 +87,8 @@ export function renderBudget() {
                 <div class="budget-cat-top">
                   <span class="budget-cat-name">${cat.name}</span>
                   <span class="budget-cat-amt${over ? ' over' : ''}">$${spent.toFixed(2)} / $${cat.budgeted}</span>
-                  <button class="icon-btn" data-edit-cat="${ci}" type="button" style="margin-left:6px;font-size:0.8rem;">✏️</button>
-                  <button class="del-sm" data-del-cat="${ci}" type="button" aria-label="Delete category">×</button>
+                  <button class="icon-btn" data-edit-cat="${cat.id}" type="button" style="margin-left:6px;font-size:0.8rem;">✏️</button>
+                  <button class="del-sm" data-del-cat="${cat.id}" type="button" aria-label="Delete category">×</button>
                 </div>
                 <div class="budget-bar-wrap sm">
                   <div class="budget-bar-fill${over ? ' over' : ''}" style="width:${pct}%"></div>
@@ -112,8 +112,8 @@ export function renderBudget() {
               </div>
               <div style="display:flex;align-items:center;gap:10px">
                 <span class="txn-amt">-$${t.amount.toFixed(2)}</span>
-                <button class="icon-btn" data-edit-txn="${realIdx}" type="button" style="font-size:0.75rem">✏️</button>
-                <button class="del-sm" data-del-txn="${realIdx}" type="button" aria-label="Delete">×</button>
+                <button class="icon-btn" data-edit-txn="${t.id}" type="button" style="font-size:0.75rem">✏️</button>
+                <button class="del-sm" data-del-txn="${t.id}" type="button" aria-label="Delete">×</button>
               </div>
             </div>`;
           }).join('')}
@@ -203,7 +203,7 @@ export function renderBudget() {
         <form class="dialog-card" id="edit-cat-form">
           <button class="close-btn" type="button" id="edit-cat-close">×</button>
           <p class="eyebrow">Edit Category</p>
-          <input type="hidden" name="ci">
+          <input type="hidden" name="cat-id">
           <label>Name    <input required name="name" placeholder="Groceries"></label>
           <label>Emoji   <input name="icon" maxlength="2" placeholder="🛒"></label>
           <label>Budget  <input required name="budgeted" type="number" min="0" step="1" placeholder="500"></label>
@@ -242,7 +242,7 @@ export function renderBudget() {
         <form class="dialog-card" id="edit-txn-form">
           <button class="close-btn" type="button" id="edit-txn-close">×</button>
           <p class="eyebrow">Edit Transaction</p>
-          <input type="hidden" name="txn-idx">
+          <input type="hidden" name="txn-id">
           <label>Description <input required name="desc" placeholder="Coffee shop"></label>
           <label>Amount ($) <input required name="amount" type="number" step="0.01" min="0" placeholder="12.50"></label>
           <label>Category

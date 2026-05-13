@@ -70,7 +70,10 @@ export async function loadState(state) {
       return;
     }
     const saved = snapshot.val();
-    applyStateSnapshot(state, saved);
+    // Don't overwrite unsaved changes - if there's a pending save, keep current state
+    if (!savePending) {
+      applyStateSnapshot(state, saved);
+    }
     saveToLocalStorage(state);
     lastSyncTime = new Date();
     firebaseReady = true;
@@ -144,7 +147,19 @@ export function applyStateSnapshot(state, saved) {
                         (typeof state.budget.monthly === 'number' ? state.budget.monthly : 0);
     state.budget.periodAmount = periodAmount;
     state.budget.periodType = state.budget.periodType || 'monthly';
-    state.budget.categories = toArr(state.budget.categories);
-    state.budget.transactions = toArr(state.budget.transactions);
+    state.budget.categories = toArr(state.budget.categories).map((c, i) => ({
+      ...c,
+      id: c.id || (state.nextCategoryId++ , state.nextCategoryId - 1)
+    }));
+    state.budget.transactions = toArr(state.budget.transactions).map((t, i) => ({
+      ...t,
+      id: t.id || (state.nextTransactionId++ , state.nextTransactionId - 1)
+    }));
   }
+
+  // Assign IDs to profiles if missing
+  state.profiles = toArr(state.profiles).map((p, i) => ({
+    ...p,
+    id: p.id || (state.nextProfileId++ , state.nextProfileId - 1)
+  }));
 }

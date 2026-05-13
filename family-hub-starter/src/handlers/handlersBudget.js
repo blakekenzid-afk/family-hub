@@ -51,11 +51,13 @@ export function setupBudget(state, render) {
   // Delete transaction
   document.querySelectorAll('[data-del-txn]').forEach(btn =>
     btn.addEventListener('click', () => {
-      const idx = Number(btn.dataset.delTxn);
-      const txn = state.budget.transactions[idx];
-      const cat = state.budget.categories.find(c => c.name === txn.category);
-      if (cat) cat.spent = Math.max(0, Math.round((cat.spent - txn.amount) * 100) / 100);
-      state.budget.transactions.splice(idx, 1);
+      const txnId = Number(btn.dataset.delTxn);
+      const txn = state.budget.transactions.find(t => t.id === txnId);
+      if (txn) {
+        const cat = state.budget.categories.find(c => c.name === txn.category);
+        if (cat) cat.spent = Math.max(0, Math.round((cat.spent - txn.amount) * 100) / 100);
+        state.budget.transactions = state.budget.transactions.filter(t => t.id !== txnId);
+      }
       render();
     }));
 
@@ -69,9 +71,10 @@ export function setupBudget(state, render) {
       // Will be set by the edit button click handler below
     },
     onSubmit: (data) => {
-      const txnIdx = Number(document.querySelector('#edit-txn-form [name=txn-idx]')?.value || -1);
-      if (txnIdx < 0) return;
-      const txn = state.budget.transactions[txnIdx];
+      const txnId = Number(document.querySelector('#edit-txn-form [name=txn-id]')?.value || -1);
+      if (txnId < 0) return;
+      const txn = state.budget.transactions.find(t => t.id === txnId);
+      if (!txn) return;
       const oldCat = state.budget.categories.find(c => c.name === txn.category);
       const newCat = state.budget.categories.find(c => c.name === data.get('category'));
       const oldAmount = txn.amount;
@@ -93,11 +96,11 @@ export function setupBudget(state, render) {
   // Edit transaction button click handler
   document.querySelectorAll('[data-edit-txn]').forEach(btn =>
     btn.addEventListener('click', () => {
-      const txnIdx = Number(btn.dataset.editTxn);
-      const txn = state.budget.transactions[txnIdx];
+      const txnId = Number(btn.dataset.editTxn);
+      const txn = state.budget.transactions.find(t => t.id === txnId);
       if (!txn) return;
 
-      document.querySelector('#edit-txn-form [name=txn-idx]').value = txnIdx;
+      document.querySelector('#edit-txn-form [name=txn-id]').value = txnId;
       document.querySelector('#edit-txn-form [name=amount]').value = txn.amount;
       document.querySelector('#edit-txn-form [name=desc]').value = txn.desc || '';
       document.querySelector('#edit-txn-form [name=category]').value = txn.category;
@@ -107,7 +110,8 @@ export function setupBudget(state, render) {
   // Delete category
   document.querySelectorAll('[data-del-cat]').forEach(btn =>
     btn.addEventListener('click', () => {
-      state.budget.categories.splice(Number(btn.dataset.delCat), 1);
+      const catId = Number(btn.dataset.delCat);
+      state.budget.categories = state.budget.categories.filter(c => c.id !== catId);
       render();
     }));
 
@@ -121,14 +125,14 @@ export function setupBudget(state, render) {
       // Will be set by the edit button click handler below
     },
     onSubmit: (data) => {
-      const ci = Number(document.querySelector('#edit-cat-form [name=ci]')?.value);
-      state.budget.categories[ci] = {
-        ...state.budget.categories[ci],
-        name: data.get('name'),
-        icon: data.get('icon') || state.budget.categories[ci].icon,
-        budgeted: parseFloat(data.get('budgeted')),
-        spent: parseFloat(data.get('spent')),
-      };
+      const catId = Number(document.querySelector('#edit-cat-form [name=cat-id]')?.value);
+      const cat = state.budget.categories.find(c => c.id === catId);
+      if (cat) {
+        cat.name = data.get('name');
+        cat.icon = data.get('icon') || cat.icon;
+        cat.budgeted = parseFloat(data.get('budgeted'));
+        cat.spent = parseFloat(data.get('spent'));
+      }
     },
   });
   editCatSetup(state, render);
@@ -136,10 +140,11 @@ export function setupBudget(state, render) {
   // Edit category button click handler
   document.querySelectorAll('[data-edit-cat]').forEach(btn =>
     btn.addEventListener('click', () => {
-      const ci = Number(btn.dataset.editCat);
-      const cat = state.budget.categories[ci];
+      const catId = Number(btn.dataset.editCat);
+      const cat = state.budget.categories.find(c => c.id === catId);
+      if (!cat) return;
       const f = document.querySelector('#edit-cat-form');
-      f.querySelector('[name=ci]').value = ci;
+      f.querySelector('[name=cat-id]').value = catId;
       f.querySelector('[name=name]').value = cat.name;
       f.querySelector('[name=icon]').value = cat.icon;
       f.querySelector('[name=budgeted]').value = cat.budgeted;
@@ -155,6 +160,7 @@ export function setupBudget(state, render) {
     formId: 'add-cat-form',
     onSubmit: (data) => {
       state.budget.categories.push({
+        id: state.nextCategoryId++,
         name: data.get('name'),
         icon: data.get('icon') || '📦',
         budgeted: parseFloat(data.get('budgeted')) || 0,
@@ -175,6 +181,7 @@ export function setupBudget(state, render) {
       const amount = parseFloat(data.get('amount')) || 0;
       if (cat) cat.spent = Math.round((cat.spent + amount) * 100) / 100;
       state.budget.transactions.push({
+        id: state.nextTransactionId++,
         date: todayStr(),
         desc: data.get('desc'),
         amount,

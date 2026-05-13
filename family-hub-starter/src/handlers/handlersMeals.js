@@ -1,66 +1,103 @@
 // Meals and Recipes handlers
 export function setupMeals(state, render, assignRecipeToDay) {
-  document.querySelectorAll('[data-edit-meal]').forEach(btn =>
-    btn.addEventListener('click', () => {
-      state.editingMealIdx = Number(btn.dataset.editMeal);
-      render();
-    }));
+  // Unified click delegation handler for meal interactions
+  const pageEl = document.querySelector('.page');
+  if (pageEl) {
+    pageEl.addEventListener('click', (e) => {
+      // Edit meal button
+      if (e.target.closest('[data-edit-meal]')) {
+        const btn = e.target.closest('[data-edit-meal]');
+        state.editingMealIdx = Number(btn.dataset.editMeal);
+        render();
+        return;
+      }
 
-  document.querySelectorAll('.meal-edit-form').forEach(form =>
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const data = new FormData(e.currentTarget);
-      state.meals[Number(form.dataset.mealIdx)].meal = data.get('meal');
-      state.editingMealIdx = null;
-      render();
-    }));
+      // Select recipe card
+      if (e.target.closest('[data-select-recipe]')) {
+        if (e.target.closest('[data-del-recipe]')) return;
+        const card = e.target.closest('[data-select-recipe]');
+        const id = Number(card.dataset.selectRecipe);
+        state.selectedRecipeId = state.selectedRecipeId === id ? null : id;
+        render();
+        return;
+      }
 
-  // Drag-and-drop on recipe cards
-  document.querySelectorAll('[data-recipe-id]').forEach(card => {
-    card.addEventListener('dragstart', e => {
-      e.dataTransfer.setData('recipeId', card.dataset.recipeId);
-      card.classList.add('dragging');
+      // Delete recipe
+      if (e.target.closest('[data-del-recipe]')) {
+        e.stopPropagation();
+        const btn = e.target.closest('[data-del-recipe]');
+        const id = Number(btn.dataset.delRecipe);
+        state.recipes = state.recipes.filter(r => r.id !== id);
+        if (state.selectedRecipeId === id) state.selectedRecipeId = null;
+        render();
+        return;
+      }
+
+      // Tap-to-assign on drop zone (mobile)
+      if (e.target.closest('.meal-drop-zone')) {
+        const zone = e.target.closest('.meal-drop-zone');
+        if (e.target.closest('[data-edit-meal]')) return;
+        if (state.selectedRecipeId !== null) {
+          assignRecipeToDay(state.selectedRecipeId, Number(zone.dataset.dropDay));
+        }
+        return;
+      }
     });
-    card.addEventListener('dragend', () => card.classList.remove('dragging'));
-  });
 
-  // Drop zones on day rows
-  document.querySelectorAll('.meal-drop-zone').forEach(zone => {
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-    zone.addEventListener('drop', e => {
+    // Drag-and-drop on recipe cards
+    pageEl.addEventListener('dragstart', (e) => {
+      if (e.target.closest('[data-recipe-id]')) {
+        const card = e.target.closest('[data-recipe-id]');
+        e.dataTransfer.setData('recipeId', card.dataset.recipeId);
+        card.classList.add('dragging');
+      }
+    });
+
+    pageEl.addEventListener('dragend', (e) => {
+      if (e.target.closest('[data-recipe-id]')) {
+        const card = e.target.closest('[data-recipe-id]');
+        card.classList.remove('dragging');
+      }
+    });
+
+    // Drop zones on day rows
+    pageEl.addEventListener('dragover', (e) => {
+      const zone = e.target.closest('.meal-drop-zone');
+      if (!zone) return;
+      e.preventDefault();
+      zone.classList.add('drag-over');
+    });
+
+    pageEl.addEventListener('dragleave', (e) => {
+      const zone = e.target.closest('.meal-drop-zone');
+      if (!zone) return;
+      zone.classList.remove('drag-over');
+    });
+
+    pageEl.addEventListener('drop', (e) => {
+      const zone = e.target.closest('.meal-drop-zone');
+      if (!zone) return;
       e.preventDefault();
       zone.classList.remove('drag-over');
       const recipeId = Number(e.dataTransfer.getData('recipeId'));
       assignRecipeToDay(recipeId, Number(zone.dataset.dropDay));
     });
-    // Tap-to-assign (mobile)
-    zone.addEventListener('click', e => {
-      if (e.target.closest('[data-edit-meal]')) return;
-      if (state.selectedRecipeId !== null) {
-        assignRecipeToDay(state.selectedRecipeId, Number(zone.dataset.dropDay));
+  }
+
+  // Meal edit form submission - use delegated handler since form gets re-rendered
+  const appEl = document.querySelector('#app');
+  if (appEl) {
+    appEl.addEventListener('submit', (e) => {
+      if (e.target.closest('.meal-edit-form')) {
+        e.preventDefault();
+        const form = e.target.closest('.meal-edit-form');
+        const data = new FormData(form);
+        state.meals[Number(form.dataset.mealIdx)].meal = data.get('meal');
+        state.editingMealIdx = null;
+        render();
       }
-    });
-  });
-
-  // Tap a recipe card to select / deselect it
-  document.querySelectorAll('[data-select-recipe]').forEach(card =>
-    card.addEventListener('click', e => {
-      if (e.target.closest('[data-del-recipe]')) return;
-      const id = Number(card.dataset.selectRecipe);
-      state.selectedRecipeId = state.selectedRecipeId === id ? null : id;
-      render();
-    }));
-
-  // Delete recipe
-  document.querySelectorAll('[data-del-recipe]').forEach(btn =>
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const id = Number(btn.dataset.delRecipe);
-      state.recipes = state.recipes.filter(r => r.id !== id);
-      if (state.selectedRecipeId === id) state.selectedRecipeId = null;
-      render();
-    }));
+    }, true); // Use capture phase for form submission
+  }
 
   // Add / Edit recipe dialog
   const recipeDialog = document.querySelector('#recipe-dialog');
