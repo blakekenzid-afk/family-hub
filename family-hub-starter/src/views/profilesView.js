@@ -11,7 +11,7 @@ export function renderProfiles() {
       <div class="profiles-grid">
         ${state.profiles.map((p, i) => `
           <div class="profile-card ${p.color}">
-            <button class="del-sm profile-del" data-del-profile="${i}" type="button" aria-label="Remove">×</button>
+            <button class="del-sm profile-del" data-del-profile="${p.id}" type="button" aria-label="Remove">×</button>
             <div class="profile-avatar">${p.emoji}</div>
             <span class="profile-name">${p.name}</span>
             <span class="profile-type-badge">${p.type === 'child' ? '👶 Child' : '🧑 Adult'}</span>
