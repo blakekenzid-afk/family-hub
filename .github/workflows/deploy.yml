@@ -16,7 +16,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: family-hub-starter
-        run: npm install
+        run: npm ci
 
       - name: Build
         working-directory: family-hub-starter
@@ -38,3 +38,4 @@ jobs:
           projectId: family-hub-67b12
           channelId: live
           entryPoint: family-hub-starter
+          firebaseToolsVersion: 15.17.0
